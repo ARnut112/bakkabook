@@ -45,10 +45,10 @@
       const orderNumber = await BakkaStore.placeOrder(form);
       BakkaStore.clearCart(); document.getElementById('cart-content').hidden = true;
       const success = document.getElementById('order-success'); success.hidden = false;
-      success.innerHTML = `${icon('check')}<div class="eyebrow orange">ORDER RECEIVED</div><h1>ร้านได้รับคำสั่งซื้อแล้ว</h1><p>เลขที่คำสั่งซื้อ <strong>${escape(orderNumber || 'รอตรวจสอบ')}</strong></p><p>ร้านจะติดต่อกลับทางเบอร์โทรศัพท์เพื่อยืนยันรายการ ยอดชำระ และการจัดส่ง</p><a class="button primary" href="index.html#collection">กลับไปเลือกหนังสือ</a>`;
+      success.innerHTML = `${icon('check')}<div class="eyebrow orange">ORDER RECEIVED</div><h1>รับคำขอแล้ว กำลังรอร้านดำเนินการ</h1><p>เลขที่คำสั่งซื้อ <strong>${escape(orderNumber || 'รอตรวจสอบ')}</strong></p><p>ร้านจะติดต่อกลับทางเบอร์โทรศัพท์${form.line_id ? ' หรือ LINE ID ' + escape(form.line_id) : ''} เพื่อยืนยันรายการ แจ้งยอดรวมค่าส่ง และวิธีชำระเงิน กรุณารอร้านติดต่อก่อนชำระเงิน</p><a class="button primary" href="index.html#collection">กลับไปเลือกหนังสือ</a>`;
     } catch (error) {
-      const message = /PGRST202|42883|create_book_order|Could not find the function/i.test(error.message) ? 'ระบบรับคำสั่งซื้อยังอยู่ระหว่างเตรียมใช้งาน กรุณาติดต่อร้านโดยตรง' : error.message;
-      showError(message); submit.disabled = false; submit.innerHTML = 'ส่งคำสั่งซื้อให้ร้าน <span data-icon="arrow"></span>';
+      const message = /PGRST202|42883|create_book_order|Could not find the function/i.test(error.message) ? 'ระบบสั่งซื้อใน Supabase ยังติดตั้งไม่ครบ ให้ผู้ดูแลรันไฟล์ supabase/orders.sql ใน SQL Editor แล้วลองใหม่' : error.message;
+      showError(message); submit.disabled = false; submit.innerHTML = 'ส่งคำขอสั่งซื้อ <span data-icon="arrow"></span>';
     }
   });
 })();

@@ -192,14 +192,14 @@
       saveCart(items); return items;
     },
     clearCart() { saveCart([]); },
-    async placeOrder({ name, phone, address, note = '' }) {
+    async placeOrder({ name, phone, line_id = '', address, note = '' }) {
       checkConfiguration();
       if (!configured) throw new Error('ระบบรับคำสั่งซื้อยังไม่พร้อมใช้งาน กรุณาติดต่อร้าน');
       const items = cart();
       if (!items.length) throw new Error('กรุณาเลือกหนังสือใส่ตะกร้าก่อน');
       const data = await request('/rest/v1/rpc/create_book_order', {
         method:'POST', headers:{ 'Content-Type':'application/json' },
-        body:JSON.stringify({ p_customer_name:name, p_phone:phone, p_address:address, p_note:note, p_items:items.map(item => ({ book_id:item.id, quantity:item.quantity })) })
+        body:JSON.stringify({ p_customer_name:name, p_phone:phone, p_line_id:line_id, p_address:address, p_note:note, p_items:items.map(item => ({ book_id:item.id, quantity:item.quantity })) })
       });
       return typeof data === 'string' ? data : data?.order_number || data?.orderNumber || '';
     },

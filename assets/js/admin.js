@@ -34,14 +34,14 @@
     try { books = await BakkaStore.list(true); renderTable(); }
     catch (error) { showError('dashboard-error', 'โหลดข้อมูลไม่สำเร็จ: ' + error.message + ' — กรุณารีเฟรชเพื่อลองใหม่'); }
   }
-  const orderStatuses = { pending:'รอยืนยัน', confirmed:'ยืนยันแล้ว', shipped:'จัดส่งแล้ว', cancelled:'ยกเลิก' };
+  const orderStatuses = { pending:'รอติดต่อ', contacted:'ติดต่อแล้ว / รอชำระ', confirmed:'ยืนยันแล้ว / เตรียมส่ง', shipped:'จัดส่งแล้ว', cancelled:'ยกเลิก' };
   async function loadOrders() {
     showError('orders-error',''); $('orders-table-body').innerHTML = ''; $('orders-empty').hidden = true;
     try {
       orders = await BakkaStore.listOrders();
       $('orders-count').textContent = `${orders.length} รายการ`;
       $('orders-empty').hidden = orders.length > 0;
-      $('orders-table-body').innerHTML = orders.map(order => `<tr data-order-row="${escape(order.id)}"><td><strong>${escape(order.order_number)}</strong><br><span>${new Date(order.created_at).toLocaleString('th-TH')}</span></td><td><div class="order-customer"><strong>${escape(order.customer_name)}</strong><a href="tel:${escape(order.phone)}">${escape(order.phone)}</a><span>${escape(order.address)}</span>${order.note ? `<span>หมายเหตุ: ${escape(order.note)}</span>` : ''}</div></td><td><div class="order-item-list">${(order.order_items || []).map(item => `${escape(item.book_title)} × ${item.quantity} · ${money(item.unit_price * item.quantity)}`).join('<br>')}</div></td><td><strong>${money(order.total)}</strong><br><span>ยังไม่รวมค่าส่ง</span></td><td><label class="sr-only" for="order-status-${escape(order.id)}">สถานะ ${escape(order.order_number)}</label><select id="order-status-${escape(order.id)}" data-order-status="${escape(order.id)}" ${order.status === 'cancelled' ? 'disabled' : ''}>${Object.entries(orderStatuses).map(([value,label]) => `<option value="${value}" ${value === order.status ? 'selected' : ''}>${label}</option>`).join('')}</select></td><td><button class="button secondary order-save" data-save-order="${escape(order.id)}" ${order.status === 'cancelled' ? 'disabled' : ''}>บันทึก</button></td></tr>`).join('');
+      $('orders-table-body').innerHTML = orders.map(order => `<tr data-order-row="${escape(order.id)}"><td><strong>${escape(order.order_number)}</strong><br><span>${new Date(order.created_at).toLocaleString('th-TH')}</span></td><td><div class="order-customer"><strong>${escape(order.customer_name)}</strong><a href="tel:${escape(order.phone)}">${escape(order.phone)}</a>${order.line_id ? `<span>LINE ID: ${escape(order.line_id)}</span>` : ''}<span>${escape(order.address)}</span>${order.note ? `<span>หมายเหตุ: ${escape(order.note)}</span>` : ''}</div></td><td><div class="order-item-list">${(order.order_items || []).map(item => `${escape(item.book_title)} × ${item.quantity} · ${money(item.unit_price * item.quantity)}`).join('<br>')}</div></td><td><strong>${money(order.total)}</strong><br><span>ยังไม่รวมค่าส่ง</span></td><td><label class="sr-only" for="order-status-${escape(order.id)}">สถานะ ${escape(order.order_number)}</label><select id="order-status-${escape(order.id)}" data-order-status="${escape(order.id)}" ${order.status === 'cancelled' ? 'disabled' : ''}>${Object.entries(orderStatuses).map(([value,label]) => `<option value="${value}" ${value === order.status ? 'selected' : ''}>${label}</option>`).join('')}</select></td><td><button class="button secondary order-save" data-save-order="${escape(order.id)}" ${order.status === 'cancelled' ? 'disabled' : ''}>ดำเนินการต่อ</button></td></tr>`).join('');
     } catch (error) { showError('orders-error','โหลดคำสั่งซื้อไม่สำเร็จ: ' + error.message); }
   }
   function renderImages() {
@@ -136,7 +136,7 @@
     if (saveOrder) {
       const select = document.querySelector(`[data-order-status="${CSS.escape(saveOrder.dataset.saveOrder)}"]`);
       saveOrder.disabled = true;
-      BakkaStore.updateOrderStatus(saveOrder.dataset.saveOrder,select.value).then(async () => { toast('อัปเดตสถานะคำสั่งซื้อแล้ว'); await loadOrders(); await loadBooks(); }).catch(error => showError('orders-error','บันทึกสถานะไม่สำเร็จ: ' + error.message)).finally(() => { saveOrder.disabled = false; });
+      BakkaStore.updateOrderStatus(saveOrder.dataset.saveOrder,select.value).then(async () => { toast('อัปเดตขั้นตอนคำสั่งซื้อแล้ว'); await loadOrders(); await loadBooks(); }).catch(error => showError('orders-error','บันทึกสถานะไม่สำเร็จ: ' + error.message)).finally(() => { saveOrder.disabled = false; });
     }
     if (event.target.closest('#apply-ai') && suggestion) {
       if (['title','author'].some(key => form.elements[key].value.trim()) && !confirm('นำชื่อที่อ่านได้มาแทนชื่อหนังสือหรือผู้เขียนเดิมหรือไม่?')) return;

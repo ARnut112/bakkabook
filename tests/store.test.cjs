@@ -52,13 +52,13 @@ test('cart persists item quantities and removes items when quantity is cleared',
   assert.deepEqual(JSON.parse(JSON.stringify(store.cart())),[{id:'book-01',quantity:2}]);
   store.clearCart(); assert.equal(store.cart().length,0);
 });
-test('checkout sends only book ids and quantities; server returns the order number',async()=>{
+test('checkout sends contact details and only book ids/quantities; server returns the order number',async()=>{
   let call;
   const {store}=app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async (url,options)=>{call={url,options};return response('BK-261012-ABC123');});
   store.addToCart('book-id',2);
-  const number=await store.placeOrder({name:'น้องนัท',phone:'0812345678',address:'กรุงเทพมหานคร',note:'โทรก่อนส่ง'});
+  const number=await store.placeOrder({name:'น้องนัท',phone:'0812345678',line_id:'nattan_book',address:'กรุงเทพมหานคร',note:'โทรก่อนส่ง'});
   assert.equal(number,'BK-261012-ABC123'); assert.match(call.url,/rpc\/create_book_order$/);
-  assert.deepEqual(JSON.parse(call.options.body),{p_customer_name:'น้องนัท',p_phone:'0812345678',p_address:'กรุงเทพมหานคร',p_note:'โทรก่อนส่ง',p_items:[{book_id:'book-id',quantity:2}]});
+  assert.deepEqual(JSON.parse(call.options.body),{p_customer_name:'น้องนัท',p_phone:'0812345678',p_line_id:'nattan_book',p_address:'กรุงเทพมหานคร',p_note:'โทรก่อนส่ง',p_items:[{book_id:'book-id',quantity:2}]});
 });
 test('order management requests are sent with the signed-in admin session',async()=>{
   const calls=[];

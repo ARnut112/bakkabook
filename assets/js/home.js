@@ -13,8 +13,9 @@
     grid.innerHTML = results.slice(0, state.limit).map(card).join('');
     document.getElementById('result-count').textContent = `${results.length} เล่มบนชั้น`;
     document.getElementById('load-more').hidden = results.length <= state.limit;
-    document.getElementById('collection-title').textContent = state.favorites ? 'ชั้นหนังสือของคุณ.' : state.featured ? 'คัดสรรโดยเรา.' : 'เล่มต่อไปของคุณ.';
-    document.getElementById('collection-description').textContent = state.favorites ? 'เก็บเล่มที่ชอบไว้ แล้วค่อยกลับมาอ่านเรื่องราวของมัน' : 'บางครั้ง หนังสือที่ดี ก็มาหาเราในเวลาที่พอดี';
+    document.getElementById('collection-title').textContent = state.favorites ? 'ชั้นหนังสือของคุณ.' : state.featured ? 'คัดสรรโดยเรา.' : 'เลือกซื้อหนังสือ.';
+    const collectionDescription = document.getElementById('collection-description');
+    if (collectionDescription) collectionDescription.textContent = state.favorites ? 'เก็บเล่มที่ชอบไว้ แล้วค่อยกลับมาอ่านเรื่องราวของมัน' : 'บางครั้ง หนังสือที่ดี ก็มาหาเราในเวลาที่พอดี';
     const reset = '<button class="button secondary" data-reset>ดูหนังสือทั้งหมด</button>';
     message.innerHTML = results.length ? '' : empty(state.favorites ? 'ยังไม่มีหนังสือบนชั้นนี้' : 'ยังไม่เจอเล่มที่คุณตามหา', state.favorites ? 'กดรูปที่คั่นหนังสือบนเล่มที่ชอบ เพื่อเก็บไว้ที่นี่ หรือเปลี่ยนคำค้นหา' : 'ลองเปลี่ยนคำค้นหาหรือหมวดหมู่ แล้วมาหาเรื่องราวดี ๆ กันใหม่', reset);
     const active = document.getElementById('active-filter');

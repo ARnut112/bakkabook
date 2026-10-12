@@ -6,12 +6,16 @@ create table if not exists public.orders (
   order_number text not null unique,
   customer_name text not null check (char_length(trim(customer_name)) between 2 and 100),
   phone text not null check (char_length(trim(phone)) between 8 and 20),
+  line_id text not null default '' check (char_length(line_id) <= 100),
   address text not null check (char_length(trim(address)) between 5 and 1000),
   note text not null default '' check (char_length(note) <= 500),
   total numeric(10,2) not null check (total >= 0),
   status text not null default 'pending' check (status in ('pending','confirmed','shipped','cancelled')),
   created_at timestamptz not null default now()
 );
+alter table public.orders add column if not exists line_id text not null default '';
+alter table public.orders drop constraint if exists orders_status_check;
+alter table public.orders add constraint orders_status_check check (status in ('pending','contacted','confirmed','shipped','cancelled'));
 
 create table if not exists public.order_items (
   id uuid primary key default gen_random_uuid(),
@@ -38,6 +42,7 @@ create policy "Admins read order items" on public.order_items for select to auth
 create or replace function public.create_book_order(
   p_customer_name text,
   p_phone text,
+  p_line_id text,
   p_address text,
   p_note text,
   p_items jsonb
@@ -57,6 +62,7 @@ begin
     raise exception 'กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง';
   end if;
   if regexp_replace(trim(p_phone),'[^0-9]','','g') !~ '^[0-9]{8,15}$' then raise exception 'กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง'; end if;
+  if char_length(coalesce(p_line_id,'')) > 100 then raise exception 'LINE ID ยาวเกินไป'; end if;
   if char_length(trim(coalesce(p_address,''))) not between 5 and 1000 then
     raise exception 'กรุณากรอกที่อยู่จัดส่งให้ครบถ้วน';
   end if;
@@ -94,8 +100,8 @@ begin
   end loop;
 
   v_order_number := 'BK-' || to_char(now(),'YYMMDD') || '-' || upper(substr(replace(gen_random_uuid()::text,'-',''),1,8));
-  insert into public.orders(order_number,customer_name,phone,address,note,total)
-    values (v_order_number,trim(p_customer_name),trim(p_phone),trim(p_address),trim(coalesce(p_note,'')),v_total)
+  insert into public.orders(order_number,customer_name,phone,line_id,address,note,total)
+    values (v_order_number,trim(p_customer_name),trim(p_phone),trim(coalesce(p_line_id,'')),trim(p_address),trim(coalesce(p_note,'')),v_total)
     returning id into v_order_id;
 
   for v_item in
@@ -112,8 +118,8 @@ begin
   return v_order_number;
 end;
 $$;
-revoke all on function public.create_book_order(text,text,text,text,jsonb) from public;
-grant execute on function public.create_book_order(text,text,text,text,jsonb) to anon, authenticated;
+revoke all on function public.create_book_order(text,text,text,text,text,jsonb) from public;
+grant execute on function public.create_book_order(text,text,text,text,text,jsonb) to anon, authenticated;
 
 create or replace function public.update_book_order_status(p_order_id uuid, p_status text)
 returns void
@@ -123,19 +129,20 @@ declare
   v_item record;
 begin
   if not (select public.is_book_admin()) then raise exception 'เฉพาะเจ้าของร้านเท่านั้น'; end if;
-  if p_status not in ('pending','confirmed','shipped','cancelled') then raise exception 'สถานะคำสั่งซื้อไม่ถูกต้อง'; end if;
+  if p_status not in ('pending','contacted','confirmed','shipped','cancelled') then raise exception 'สถานะคำสั่งซื้อไม่ถูกต้อง'; end if;
   select status into v_status from public.orders where id = p_order_id for update;
   if not found then raise exception 'ไม่พบคำสั่งซื้อ'; end if;
   if v_status = 'cancelled' and p_status <> 'cancelled' then raise exception 'คำสั่งซื้อที่ยกเลิกแล้วไม่สามารถเปิดใหม่ได้'; end if;
   if v_status <> 'cancelled' and p_status = 'cancelled' then
-    for v_item in select book_id, quantity from public.order_items where order_id = p_order_id and book_id is not null loop
+    for v_item in select book_id, quantity from public.order_items where order_id = p_order_id and book_id is not null order by book_id loop
       update public.books set stock = stock + v_item.quantity where id = v_item.book_id;
     end loop;
   end if;
-  update public.orders set status = p_status where id = p_order_id;
+update public.orders set status = p_status where id = p_order_id;
 end;
 $$;
 revoke all on function public.update_book_order_status(uuid,text) from public;
 grant execute on function public.update_book_order_status(uuid,text) to authenticated;
 
+notify pgrst, 'reload schema';
 commit;

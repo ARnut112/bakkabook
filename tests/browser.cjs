@@ -23,6 +23,7 @@ const output = path.join(root,'test-results'); fs.mkdirSync(output,{recursive:tr
     await page.goto(base + 'index.html');
     await page.waitForSelector('.book-card');
     assert.equal(await page.locator('#book-grid .book-card').count(),8);
+    assert.equal(await page.locator('#catalog-message .empty-state').count(),0,'the catalog should not show an error when books loaded');
     assert.equal(await page.locator('#result-count').textContent(),'12 เล่มบนชั้น');
     await page.screenshot({path:path.join(output,'home-desktop.png'),fullPage:true});
     await page.locator('#load-more').click(); assert.equal(await page.locator('#book-grid .book-card').count(),12);
