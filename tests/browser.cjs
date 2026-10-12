@@ -42,6 +42,8 @@ const output = path.join(root,'test-results'); fs.mkdirSync(output,{recursive:tr
     await page.locator('[data-image-index="0"]').click(); await page.screenshot({path:path.join(output,'product-desktop.png'),fullPage:true});
     await page.goto(base+'admin.html'); await page.waitForSelector('#dashboard:not([hidden])');
     assert.equal(await page.locator('#book-table-body tr').count(),12);
+    assert.equal(await page.locator('#mode-badge, #nav-setup, #setup-dialog, #demo-note, #demo-ai').count(),0);
+    assert.equal(await page.locator('#ai-card h2').textContent(),'ผู้ช่วยอ่านปก');
     await page.screenshot({path:path.join(output,'admin-desktop.png'),fullPage:true});
     await page.locator('#add-book').click();
     const upload = await page.screenshot({clip:{x:0,y:0,width:120,height:180}});
@@ -50,8 +52,7 @@ const output = path.join(root,'test-results'); fs.mkdirSync(output,{recursive:tr
     assert((await page.locator('.image-preview-item img').getAttribute('src')).startsWith('data:image/jpeg;base64,'));
     await page.locator('[data-remove-image="0"]').click();
     assert.equal(await page.locator('.image-preview-item').count(),0);
-    await page.locator('#demo-ai').click(); await page.locator('#apply-ai').click();
-    assert.equal(await page.locator('#book-title').inputValue(),'ในวันที่ดอกไม้ผลิบาน');
+    assert(await page.locator('#ai-help').textContent().includes('ชื่อหนังสือและผู้เขียน'));
     await page.locator('#book-title').fill('ทดสอบหนังสือใหม่'); await page.locator('#book-price').fill('199');
     await page.locator('[data-preset="joy"]').click(); await page.locator('[data-preset="bloom"]').click();
     await page.locator('#book-status').selectOption('draft');
@@ -75,7 +76,6 @@ const output = path.join(root,'test-results'); fs.mkdirSync(output,{recursive:tr
     await page.locator('[data-delete="'+id+'"]').click(); await page.locator('#cancel-delete').click(); assert.equal(await page.locator('#stat-total').textContent(),'13');
     await page.locator('[data-delete="'+id+'"]').click(); await page.locator('#confirm-delete').click();
     await page.waitForFunction(()=>document.getElementById('stat-total').textContent==='12');
-    await page.locator('#nav-setup').click(); assert(await page.locator('#setup-dialog').isVisible()); await page.keyboard.press('Escape'); assert(!await page.locator('#setup-dialog').isVisible());
     for (const width of [390,768,1280]) {
       await page.setViewportSize({width,height:900});
       for (const [name,url,ready] of [['home','index.html','.book-card'],['product','product.html?id=book-01','.product-info'],['admin','admin.html','#dashboard:not([hidden])']]) {
@@ -88,6 +88,6 @@ const output = path.join(root,'test-results'); fs.mkdirSync(output,{recursive:tr
       assert(!await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),'editor overflows at '+width);
       if(width===390) await page.screenshot({path:path.join(output,'editor-mobile.png'),fullPage:true});
     }
-    assert.deepEqual(errors,[]); console.log('PASS: search + filter + both sorts, empty/reset, favorites, gallery, demo AI, CRUD persistence, draft privacy, stock, dialogs, responsive 390/768/1280, no JavaScript errors.');
+    assert.deepEqual(errors,[]); console.log('PASS: search + filter + both sorts, empty/reset, favorites, gallery, cover-reader UI, CRUD persistence, draft privacy, stock, dialogs, responsive 390/768/1280, no JavaScript errors.');
   } finally { await browser.close(); if(server) server.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});

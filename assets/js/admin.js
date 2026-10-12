@@ -7,16 +7,12 @@
   $('book-category').innerHTML = BAKKA_CATEGORIES.map(category => `<option>${escape(category)}</option>`).join('');
   $('cover-presets').innerHTML = BAKKA_SEED.slice(0,6).map(book => `<button type="button" data-preset="${escape(book.cover)}" aria-label="ใช้ปกตัวอย่าง ${escape(book.title)}"><img src="${imageUrl(book.images[0])}" alt="${escape(book.title)}"></button>`).join('');
   if (BakkaStore.mode === 'live') {
-    $('mode-badge').textContent = 'SUPABASE'; $('mode-badge').classList.add('live');
-    $('demo-note').textContent = 'เชื่อมต่อ Supabase · การเปลี่ยนแปลงจะบันทึกลงฐานข้อมูลของร้าน';
-    $('ai-help').textContent = 'เลือกภาพปกแล้วกดอ่านปก Gemini จะช่วยอ่านชื่อและผู้เขียน เติมหมวดหมู่กับเรื่องย่อเองได้ หากเปิดค้นเว็บใน Paid tier ระบบจะแสดงแหล่งอ้างอิงให้ตรวจทาน';
-    $('demo-ai').hidden = true;
+    $('ai-help').textContent = 'ถ่ายหรือเลือกรูปปกเพื่อให้ AI ช่วยอ่านชื่อหนังสือและผู้เขียน คุณตรวจทานก่อนนำไปใส่ในแบบฟอร์มได้';
   } else if (BakkaStore.mode === 'invalid') {
-    $('mode-badge').textContent = 'ตั้งค่าไม่ครบ';
     $('login-submit').disabled = true;
     $('analyze-cover').disabled = true;
   } else {
-    $('analyze-cover').disabled = true; $('analyze-cover').title = 'เชื่อม Supabase และ Gemini ก่อนใช้งาน';
+    $('analyze-cover').disabled = true; $('analyze-cover').title = 'ยังไม่สามารถใช้ตัวช่วยอ่านปกได้';
   }
   function showError(id, message) { $(id).textContent = message; $(id).hidden = !message; }
   function showDashboard() { $('editor').hidden = true; $('login-section').hidden = true; $('dashboard').hidden = false; window.scrollTo(0,0); }
@@ -83,22 +79,14 @@
       for (const file of fileList) converted.push(await compressImage(file));
       images = camera ? [converted[0], ...images.slice(1,4)] : [...images,...converted];
       dirty = true; renderImages();
-      toast(camera ? 'เพิ่มภาพปกแล้ว กดอ่านปกเพื่อให้ Gemini ช่วยตรวจข้อมูล' : 'เพิ่มรูปหนังสือแล้ว');
+      toast(camera ? 'เพิ่มภาพปกแล้ว กดอ่านชื่อจากปกได้เลย' : 'เพิ่มรูปหนังสือแล้ว');
     } catch (error) { showError('form-error', error.message || 'อ่านรูปภาพไม่ได้'); }
     finally { setBusy(false); $('book-images').value = ''; $('camera-image').value = ''; }
   }
   function renderSuggestion(data, isDemo) {
     suggestion = data;
     $('ai-result').hidden = false;
-    const sources = (data.sources || []).filter(source => { try { return new URL(source.url).protocol === 'https:'; } catch { return false; } });
-    $('ai-result').innerHTML = `<h3>${isDemo ? 'ตัวอย่างข้อมูลที่นำไปใช้ได้' : 'ข้อมูลจากผู้ช่วย AI'}</h3><p><strong>${escape(data.title || 'ยังระบุชื่อไม่ได้')}</strong></p><p>ผู้เขียน: ${escape(data.author || 'ไม่พบข้อมูล')}</p><p>หมวดหมู่: ${escape(data.category || 'ยังไม่ระบุ')}</p><p>${escape(data.description || 'ไม่พบเรื่องย่อที่ยืนยันได้')}</p><p class="ai-note">${isDemo ? 'นี่คือข้อมูลหนังสือสมมติ ไม่ได้วิเคราะห์ภาพที่เลือก' : escape(data.note || 'ตรวจสอบชื่อและเรื่องย่อกับแหล่งอ้างอิงก่อนเผยแพร่')}</p>${sources.length ? `<div class="ai-sources"><strong>แหล่งข้อมูลที่ค้นพบ</strong>${sources.map(source => `<a href="${escape(source.url)}" target="_blank" rel="noopener noreferrer">${escape(source.title || source.url)}</a>`).join('')}</div>` : ''}<button type="button" class="button secondary" id="apply-ai">${icon('check')} นำข้อมูลนี้มาใส่ในฟอร์ม</button>`;
-    if (!isDemo && data.searchEntryPoint) {
-      // Keep Google's search suggestions isolated from the editor DOM. No scripts allowed.
-      const frame = document.createElement('iframe'); frame.title = 'Google Search suggestions';
-      frame.setAttribute('sandbox','allow-popups allow-popups-to-escape-sandbox');
-      frame.srcdoc = data.searchEntryPoint; frame.style.cssText = 'width:100%;height:160px;border:0;margin-top:12px';
-      $('ai-result').append(frame);
-    }
+    $('ai-result').innerHTML = `<h3>${isDemo ? 'ตัวอย่างข้อมูลที่นำไปใช้ได้' : 'ผลการอ่านปก'}</h3><p><strong>${escape(data.title || 'ยังอ่านชื่อหนังสือไม่ได้')}</strong></p><p>ผู้เขียน: ${escape(data.author || 'ยังอ่านชื่อผู้เขียนไม่ได้')}</p>${data.note ? `<p class="ai-note">${escape(data.note)}</p>` : ''}<button type="button" class="button secondary" id="apply-ai">${icon('check')} นำชื่อไปใส่ในฟอร์ม</button>`;
   }
   $('add-book').addEventListener('click', () => openEditor());
   $('start-ai').addEventListener('click', () => { openEditor(); $('ai-card').scrollIntoView({ block:'center' }); });
@@ -126,9 +114,8 @@
       images.push('assets/covers/' + preset.dataset.preset + '.svg'); renderImages(); dirty = true;
     }
     if (event.target.closest('#apply-ai') && suggestion) {
-      if (['title','author','description'].some(key => form.elements[key].value.trim()) && !confirm('นำข้อมูลที่ตรวจทานแล้วมาแทนชื่อ ผู้เขียน หมวดหมู่ และเรื่องย่อเดิมหรือไม่?')) return;
-      for (const key of ['title','author','description']) if (suggestion[key]) form.elements[key].value = suggestion[key];
-      if (BAKKA_CATEGORIES.includes(suggestion.category)) form.elements.category.value = suggestion.category;
+      if (['title','author'].some(key => form.elements[key].value.trim()) && !confirm('นำชื่อที่อ่านได้มาแทนชื่อหนังสือหรือผู้เขียนเดิมหรือไม่?')) return;
+      for (const key of ['title','author']) if (suggestion[key]) form.elements[key].value = suggestion[key];
       dirty = true; toast('นำข้อมูลมาใส่แล้ว ตรวจทานและกำหนดราคาก่อนบันทึก');
     }
   });
@@ -152,12 +139,9 @@
     finally { $('confirm-delete').disabled = false; $('cancel-delete').disabled = false; }
   });
   $('delete-dialog').addEventListener('cancel', event => { if ($('confirm-delete').disabled) event.preventDefault(); });
-  $('nav-setup').addEventListener('click', () => $('setup-dialog').showModal());
-  $('close-setup').addEventListener('click', () => $('setup-dialog').close());
-  $('demo-ai').addEventListener('click', () => renderSuggestion({ title: BAKKA_SEED[0].title, author: BAKKA_SEED[0].author, category: BAKKA_SEED[0].category, description: BAKKA_SEED[0].description }, true));
   $('analyze-cover').addEventListener('click', async () => {
     if (!images[0]?.startsWith('data:image/')) { toast('เลือกรูปปกจากเครื่องหรือถ่ายภาพก่อนใช้งาน AI', true); return; }
-    const version = editorVersion; setBusy(true); $('ai-result').hidden = false; $('ai-result').textContent = 'กำลังอ่านปกและค้นข้อมูลหนังสือ อาจใช้เวลาสักครู่...';
+    const version = editorVersion; setBusy(true); $('ai-result').hidden = false; $('ai-result').textContent = 'กำลังอ่านชื่อจากปก อาจใช้เวลาสักครู่...';
     try { const result = await BakkaStore.analyze(images[0]); if (version === editorVersion) renderSuggestion(result, false); }
     catch (error) { if (version === editorVersion) $('ai-result').textContent = 'ยังอ่านปกไม่ได้: ' + error.message; }
     finally { setBusy(false); }

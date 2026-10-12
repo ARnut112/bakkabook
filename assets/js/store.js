@@ -12,7 +12,7 @@
     try { return await fetch(url, options); }
     catch (error) {
       if (['TimeoutError','AbortError'].includes(error.name)) throw new Error('การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองใหม่');
-      throw new Error('ติดต่อ Supabase ไม่ได้ ตรวจสอบอินเทอร์เน็ตและ Project URL หรือสถานะโปรเจกต์ใน Supabase Dashboard');
+      throw new Error('เชื่อมต่อระบบไม่สำเร็จ กรุณาตรวจอินเทอร์เน็ตแล้วลองใหม่');
     }
   }
 
@@ -34,10 +34,10 @@
     let data;
     try { data = text ? JSON.parse(text) : null; } catch { throw new Error('บริการตอบกลับไม่ถูกต้อง กรุณาลองใหม่'); }
     if (!response.ok) {
-      if (data?.code === 'PGRST205' || data?.code === '42P01') throw new Error('ไม่พบตารางที่เว็บไซต์ต้องใช้ กรุณารัน supabase/schema.sql ใน Supabase SQL Editor');
-      if (data?.code === '42501') throw new Error('บัญชีนี้ไม่มีสิทธิ์เข้าถึงข้อมูล ตรวจสอบ admin_users และ policies ตามไฟล์ supabase/schema.sql');
+      if (data?.code === 'PGRST205' || data?.code === '42P01') throw new Error('ระบบยังเตรียมข้อมูลไม่ครบ กรุณาติดต่อผู้ดูแลร้าน');
+      if (data?.code === '42501') throw new Error('บัญชีนี้ยังไม่มีสิทธิ์เข้าถึงข้อมูล กรุณาติดต่อผู้ดูแลร้าน');
       const message = data?.msg || data?.message || data?.error_description || data?.error;
-      if (typeof message === 'string' && /invalid api key/i.test(message)) throw new Error('Publishable key ไม่ถูกต้องหรือไม่ตรงกับโปรเจกต์ Supabase');
+      if (typeof message === 'string' && /invalid api key/i.test(message)) throw new Error('ระบบตั้งค่าไม่ถูกต้อง กรุณาติดต่อผู้ดูแลร้าน');
       throw new Error(typeof message === 'string' ? message : 'ไม่สามารถติดต่อบริการได้');
     }
     return data;
@@ -151,12 +151,12 @@
     },
     async login(email, password) {
       checkConfiguration();
-      if (!configured) throw new Error('ยังเป็นโหมดตัวอย่าง กรุณาตั้งค่า Supabase ก่อนเข้าสู่ระบบ');
+      if (!configured) throw new Error('ระบบหลังร้านยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลร้าน');
       const data = await parseResponse(await fetchResponse(base + '/auth/v1/token?grant_type=password', {
         method: 'POST', headers: { apikey: config.supabaseAnonKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }), signal: AbortSignal.timeout(20000)
       }));
       saveSession(data);
-      try { if (!await Store.isAdmin()) throw new Error('บัญชีนี้ยังไม่ได้รับสิทธิ์ผู้ดูแลร้าน กรุณาเพิ่ม UUID ของผู้ใช้ในตาราง admin_users'); }
+      try { if (!await Store.isAdmin()) throw new Error('บัญชีนี้ยังไม่มีสิทธิ์ผู้ดูแลร้าน กรุณาติดต่อเจ้าของร้าน'); }
       catch (error) { await Store.logout().catch(() => {}); throw error; }
     },
     async isAdmin() {
@@ -178,7 +178,7 @@
     },
     async analyze(image) {
       checkConfiguration();
-      if (!configured) throw new Error('เชื่อม Supabase และ Gemini ก่อนใช้งาน AI จริง');
+      if (!configured) throw new Error('ตัวช่วยอ่านปกยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลร้าน');
       const accessToken = await token();
       if (!accessToken) throw new Error('กรุณาเข้าสู่ระบบก่อนใช้ AI');
       return parseResponse(await fetchResponse(base + '/functions/v1/' + encodeURIComponent(config.aiFunctionName || 'book-assistant'), {

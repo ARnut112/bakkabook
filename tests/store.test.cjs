@@ -107,6 +107,6 @@ test('expired admin session cannot block public reads and anonymous writes are r
 });
 test('network errors and missing tables explain the next action',async()=>{
   const config={supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'};
-  await assert.rejects(app(config,async()=>{throw new TypeError('Failed to fetch');}).store.list(),/Project URL/);
-  await assert.rejects(app(config,async()=>response({code:'PGRST205',message:'missing'},404)).store.list(),/schema.sql/);
+  await assert.rejects(app(config,async()=>{throw new TypeError('Failed to fetch');}).store.list(),/เชื่อมต่อระบบไม่สำเร็จ/);
+  await assert.rejects(app(config,async()=>response({code:'PGRST205',message:'missing'},404)).store.list(),/เตรียมข้อมูลไม่ครบ/);
 });
