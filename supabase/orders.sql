@@ -9,13 +9,23 @@ create table if not exists public.orders (
   line_id text not null default '' check (char_length(line_id) <= 100),
   address text not null check (char_length(trim(address)) between 5 and 1000),
   note text not null default '' check (char_length(note) <= 500),
+  payment_method text not null default 'contact' check (payment_method in ('contact','qr')),
   total numeric(10,2) not null check (total >= 0),
+  shipping_fee numeric(10,2) not null default 0 check (shipping_fee >= 0),
+  slip_path text,
   status text not null default 'pending' check (status in ('pending','confirmed','shipped','cancelled')),
   created_at timestamptz not null default now()
 );
 alter table public.orders add column if not exists line_id text not null default '';
+alter table public.orders add column if not exists payment_method text not null default 'contact';
+alter table public.orders add column if not exists shipping_fee numeric(10,2) not null default 0;
+alter table public.orders add column if not exists slip_path text;
 alter table public.orders drop constraint if exists orders_status_check;
-alter table public.orders add constraint orders_status_check check (status in ('pending','contacted','confirmed','shipped','cancelled'));
+alter table public.orders add constraint orders_status_check check (status in ('pending','contacted','awaiting_payment','slip_submitted','confirmed','shipped','cancelled'));
+alter table public.orders drop constraint if exists orders_payment_method_check;
+alter table public.orders add constraint orders_payment_method_check check (payment_method in ('contact','qr'));
+alter table public.orders drop constraint if exists orders_shipping_fee_check;
+alter table public.orders add constraint orders_shipping_fee_check check (shipping_fee >= 0);
 
 create table if not exists public.order_items (
   id uuid primary key default gen_random_uuid(),
@@ -28,6 +38,22 @@ create table if not exists public.order_items (
 create index if not exists orders_created_at on public.orders(created_at desc);
 create index if not exists order_items_order_id on public.order_items(order_id);
 
+create table if not exists public.shop_payment_settings (
+  id boolean primary key default true check (id),
+  qr_image_url text not null default '',
+  updated_at timestamptz not null default now()
+);
+insert into public.shop_payment_settings(id) values (true) on conflict (id) do nothing;
+alter table public.shop_payment_settings enable row level security;
+revoke all on public.shop_payment_settings from anon, authenticated;
+grant select on public.shop_payment_settings to anon, authenticated;
+grant update on public.shop_payment_settings to authenticated;
+drop policy if exists "Public can read payment QR" on public.shop_payment_settings;
+create policy "Public can read payment QR" on public.shop_payment_settings for select to anon, authenticated using (true);
+drop policy if exists "Admins update payment QR" on public.shop_payment_settings;
+create policy "Admins update payment QR" on public.shop_payment_settings for update to authenticated
+  using ((select public.is_book_admin())) with check ((select public.is_book_admin()));
+
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
 revoke all on public.orders, public.order_items from anon, authenticated;
@@ -39,6 +65,37 @@ drop policy if exists "Admins read order items" on public.order_items;
 create policy "Admins read order items" on public.order_items for select to authenticated
   using ((select public.is_book_admin()));
 
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+values ('payment-qr','payment-qr',true,5242880,array['image/jpeg','image/png','image/webp'])
+on conflict (id) do update set public=true,file_size_limit=5242880,allowed_mime_types=array['image/jpeg','image/png','image/webp'];
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+values ('payment-slips','payment-slips',false,5242880,array['image/jpeg','image/png','image/webp'])
+on conflict (id) do update set public=false,file_size_limit=5242880,allowed_mime_types=array['image/jpeg','image/png','image/webp'];
+drop policy if exists "Public can view payment QR images" on storage.objects;
+create policy "Public can view payment QR images" on storage.objects for select to public using (bucket_id='payment-qr');
+drop policy if exists "Admins manage payment QR images" on storage.objects;
+create policy "Admins manage payment QR images" on storage.objects for all to authenticated
+  using (bucket_id='payment-qr' and (select public.is_book_admin()))
+  with check (bucket_id='payment-qr' and (select public.is_book_admin()));
+
+create or replace function public.payment_slip_upload_is_open(p_order_folder text)
+returns boolean language sql security definer set search_path = '' as $$
+  select exists (select 1 from public.orders where id::text=p_order_folder and payment_method='qr' and status in ('awaiting_payment','slip_submitted'));
+$$;
+revoke all on function public.payment_slip_upload_is_open(text) from public;
+grant execute on function public.payment_slip_upload_is_open(text) to anon, authenticated;
+drop policy if exists "Customers upload payment slips for open orders" on storage.objects;
+create policy "Customers upload payment slips for open orders" on storage.objects for insert to anon, authenticated
+  with check (bucket_id='payment-slips' and (select public.payment_slip_upload_is_open(split_part(name,'/',1))));
+drop policy if exists "Customers replace payment slips for open orders" on storage.objects;
+create policy "Customers replace payment slips for open orders" on storage.objects for update to anon, authenticated
+  using (bucket_id='payment-slips' and (select public.payment_slip_upload_is_open(split_part(name,'/',1))))
+  with check (bucket_id='payment-slips' and (select public.payment_slip_upload_is_open(split_part(name,'/',1))));
+drop policy if exists "Admins read payment slips" on storage.objects;
+create policy "Admins read payment slips" on storage.objects for select to authenticated
+  using (bucket_id='payment-slips' and (select public.is_book_admin()));
+
+drop function if exists public.create_book_order(text,text,text,text,jsonb);
 create or replace function public.create_book_order(
   p_customer_name text,
   p_phone text,
@@ -120,6 +177,91 @@ end;
 $$;
 revoke all on function public.create_book_order(text,text,text,text,text,jsonb) from public;
 grant execute on function public.create_book_order(text,text,text,text,text,jsonb) to anon, authenticated;
+
+create or replace function public.submit_book_order(
+  p_customer_name text,
+  p_phone text,
+  p_line_id text,
+  p_address text,
+  p_note text,
+  p_payment_method text,
+  p_items jsonb
+) returns jsonb
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_order_number text;
+  v_order_id uuid;
+begin
+  if p_payment_method not in ('contact','qr') then raise exception 'กรุณาเลือกวิธีชำระเงิน'; end if;
+  v_order_number := public.create_book_order(p_customer_name,p_phone,p_line_id,p_address,p_note,p_items);
+  update public.orders set payment_method=p_payment_method where order_number=v_order_number returning id into v_order_id;
+  return jsonb_build_object('order_number',v_order_number,'order_id',v_order_id);
+end;
+$$;
+revoke all on function public.submit_book_order(text,text,text,text,text,text,jsonb) from public;
+grant execute on function public.submit_book_order(text,text,text,text,text,text,jsonb) to anon, authenticated;
+
+create or replace function public.get_customer_order(p_order_number text,p_phone text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_order public.orders%rowtype;
+  v_items jsonb;
+begin
+  select * into v_order from public.orders
+  where order_number=upper(trim(coalesce(p_order_number,'')))
+    and regexp_replace(phone,'[^0-9]','','g')=regexp_replace(coalesce(p_phone,''),'[^0-9]','','g');
+  if not found then raise exception 'ไม่พบคำสั่งซื้อ กรุณาตรวจเลขออเดอร์และเบอร์โทรศัพท์'; end if;
+  select coalesce(jsonb_agg(jsonb_build_object('book_title',book_title,'unit_price',unit_price,'quantity',quantity) order by id),'[]'::jsonb)
+    into v_items from public.order_items where order_id=v_order.id;
+  return jsonb_build_object('order_id',v_order.id,'order_number',v_order.order_number,'status',v_order.status,
+    'payment_method',v_order.payment_method,'subtotal',v_order.total,'shipping_fee',v_order.shipping_fee,
+    'amount_due',v_order.total+v_order.shipping_fee,'slip_submitted',v_order.slip_path is not null,'items',v_items);
+end;
+$$;
+revoke all on function public.get_customer_order(text,text) from public;
+grant execute on function public.get_customer_order(text,text) to anon, authenticated;
+
+create or replace function public.submit_order_payment_slip(p_order_id uuid,p_order_number text,p_phone text,p_slip_path text)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if not exists (select 1 from storage.objects where bucket_id='payment-slips' and name=p_slip_path) then
+    raise exception 'ไม่พบไฟล์สลิปที่อัปโหลด';
+  end if;
+  update public.orders set slip_path=p_slip_path,status='slip_submitted'
+  where id=p_order_id and order_number=upper(trim(coalesce(p_order_number,'')))
+    and regexp_replace(phone,'[^0-9]','','g')=regexp_replace(coalesce(p_phone,''),'[^0-9]','','g')
+    and payment_method='qr' and status in ('awaiting_payment','slip_submitted')
+    and p_slip_path like p_order_id::text || '/%' and p_slip_path !~ '\.\.';
+  if not found then raise exception 'ไม่สามารถส่งสลิปสำหรับคำสั่งซื้อนี้ได้ กรุณาตรวจสถานะออเดอร์'; end if;
+end;
+$$;
+revoke all on function public.submit_order_payment_slip(uuid,text,text,text) from public;
+grant execute on function public.submit_order_payment_slip(uuid,text,text,text) to anon, authenticated;
+
+create or replace function public.update_order_workflow(p_order_id uuid,p_status text,p_shipping_fee numeric)
+returns void language plpgsql security definer set search_path = '' as $$
+declare
+  v_order public.orders%rowtype;
+  v_item record;
+begin
+  if not (select public.is_book_admin()) then raise exception 'เฉพาะเจ้าของร้านเท่านั้น'; end if;
+  if p_status not in ('pending','contacted','awaiting_payment','slip_submitted','confirmed','shipped','cancelled') then raise exception 'สถานะคำสั่งซื้อไม่ถูกต้อง'; end if;
+  if p_shipping_fee is null or p_shipping_fee < 0 or p_shipping_fee > 100000 then raise exception 'กรุณากรอกค่าส่งตั้งแต่ 0 ถึง 100,000 บาท'; end if;
+  select * into v_order from public.orders where id=p_order_id for update;
+  if not found then raise exception 'ไม่พบคำสั่งซื้อ'; end if;
+  if v_order.status='cancelled' and p_status<>'cancelled' then raise exception 'คำสั่งซื้อที่ยกเลิกแล้วไม่สามารถเปิดใหม่ได้'; end if;
+  if p_status in ('awaiting_payment','slip_submitted') and v_order.payment_method<>'qr' then raise exception 'คำสั่งซื้อนี้ไม่ได้เลือกชำระด้วย QR'; end if;
+  if p_status='awaiting_payment' and not exists(select 1 from public.shop_payment_settings where id and qr_image_url<>'') then raise exception 'กรุณาเพิ่ม QR รับเงินในหลังร้านก่อน'; end if;
+  if v_order.status<>'cancelled' and p_status='cancelled' then
+    for v_item in select book_id,quantity from public.order_items where order_id=p_order_id and book_id is not null order by book_id loop
+      update public.books set stock=stock+v_item.quantity where id=v_item.book_id;
+    end loop;
+  end if;
+  update public.orders set status=p_status,shipping_fee=p_shipping_fee where id=p_order_id;
+end;
+$$;
+revoke all on function public.update_order_workflow(uuid,text,numeric) from public;
+grant execute on function public.update_order_workflow(uuid,text,numeric) to authenticated;
 
 create or replace function public.update_book_order_status(p_order_id uuid, p_status text)
 returns void

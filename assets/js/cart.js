@@ -42,10 +42,11 @@
     showError(); submit.disabled = true; submit.textContent = 'กำลังส่งคำสั่งซื้อ...';
     const form = Object.fromEntries(new FormData(event.currentTarget));
     try {
-      const orderNumber = await BakkaStore.placeOrder(form);
+      const order = await BakkaStore.placeOrder(form);
       BakkaStore.clearCart(); document.getElementById('cart-content').hidden = true;
       const success = document.getElementById('order-success'); success.hidden = false;
-      success.innerHTML = `${icon('check')}<div class="eyebrow orange">ORDER RECEIVED</div><h1>รับคำขอแล้ว กำลังรอร้านดำเนินการ</h1><p>เลขที่คำสั่งซื้อ <strong>${escape(orderNumber || 'รอตรวจสอบ')}</strong></p><p>ร้านจะติดต่อกลับทางเบอร์โทรศัพท์${form.line_id ? ' หรือ LINE ID ' + escape(form.line_id) : ''} เพื่อยืนยันรายการ แจ้งยอดรวมค่าส่ง และวิธีชำระเงิน กรุณารอร้านติดต่อก่อนชำระเงิน</p><a class="button primary" href="index.html#collection">กลับไปเลือกหนังสือ</a>`;
+      const nextMessage = form.payment_method === 'qr' ? 'ร้านจะตรวจสอบหนังสือและค่าส่งก่อน จากนั้น QR และยอดชำระจะอยู่ในหน้ารายการนี้' : `ร้านจะติดต่อกลับทางเบอร์โทรศัพท์${form.line_id ? ' หรือช่องทางที่ระบุ ' + escape(form.line_id) : ''} เพื่อยืนยันรายการและแจ้งวิธีชำระเงิน`;
+      success.innerHTML = `${icon('check')}<div class="eyebrow orange">ORDER RECEIVED</div><h1>รับคำขอแล้ว กำลังรอร้านดำเนินการ</h1><p>เลขที่คำสั่งซื้อ <strong>${escape(order.order_number || 'รอตรวจสอบ')}</strong></p><p>${nextMessage}</p><a class="button primary" href="order.html">ดูสถานะและดำเนินการต่อ</a>`;
     } catch (error) {
       const message = /PGRST202|42883|create_book_order|Could not find the function/i.test(error.message) ? 'ระบบสั่งซื้อใน Supabase ยังติดตั้งไม่ครบ ให้ผู้ดูแลรันไฟล์ supabase/orders.sql ใน SQL Editor แล้วลองใหม่' : error.message;
       showError(message); submit.disabled = false; submit.innerHTML = 'ส่งคำขอสั่งซื้อ <span data-icon="arrow"></span>';

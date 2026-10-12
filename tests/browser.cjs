@@ -38,7 +38,8 @@ const output = path.join(root,'test-results'); fs.mkdirSync(output,{recursive:tr
     await page.locator('[data-save="book-01"]').click(); assert.equal(await page.locator('#favorite-count').textContent(),'1');
     await page.goto(base+'index.html'); await page.locator('[data-cart="book-01"]').click(); assert.equal(await page.locator('#cart-count').textContent(),'1');
     await page.goto(base+'cart.html'); await page.waitForSelector('#cart-content:not([hidden])');
-    assert((await page.locator('.checkout-steps').textContent()).includes('LINE หรือ Facebook'));
+    assert((await page.locator('.checkout-steps').textContent()).includes('ชำระด้วย QR'));
+    assert.equal(await page.locator('[name="payment_method"]').count(),2);
     assert.equal(await page.locator('.cart-item').count(),1); await page.locator('[data-quantity="book-01"]').fill('2');
     assert.equal(await page.locator('#cart-count').textContent(),'2'); assert.equal(await page.locator('#cart-total').textContent(),'฿570');
     await page.locator('[data-remove-cart="book-01"]').click(); assert(await page.locator('#cart-empty').isVisible()); assert(!await page.locator('#place-order').isEnabled());
@@ -85,7 +86,7 @@ const output = path.join(root,'test-results'); fs.mkdirSync(output,{recursive:tr
     await page.waitForFunction(()=>document.getElementById('stat-total').textContent==='12');
     for (const width of [390,768,1280]) {
       await page.setViewportSize({width,height:900});
-      for (const [name,url,ready] of [['home','index.html','.book-card'],['product','product.html?id=book-01','.product-info'],['cart','cart.html','#cart-content:not([hidden])'],['admin','admin.html','#dashboard:not([hidden])']]) {
+      for (const [name,url,ready] of [['home','index.html','.book-card'],['product','product.html?id=book-01','.product-info'],['cart','cart.html','#cart-content:not([hidden])'],['order','order.html','.order-lookup'],['admin','admin.html','#dashboard:not([hidden])']]) {
         await page.goto(base+url); await page.waitForSelector(ready);
         const overflow = await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth);
         assert(!overflow, name+' overflows at '+width);

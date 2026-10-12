@@ -4,6 +4,7 @@
   const SESSION_KEY = 'bakkabook.session.v2.' + config.supabaseUrl;
   const FAVORITE_KEY = 'bakkabook.favorites.v1';
   const CART_KEY = 'bakkabook.cart.v1';
+  const LAST_ORDER_KEY = 'bakkabook.last-order.v1';
   const configured = config.mode === 'live';
   const base = config.supabaseUrl;
   let refreshing = null;
@@ -192,16 +193,53 @@
       saveCart(items); return items;
     },
     clearCart() { saveCart([]); },
-    async placeOrder({ name, phone, line_id = '', address, note = '' }) {
+    async placeOrder({ name, phone, line_id = '', address, note = '', payment_method = 'contact' }) {
       checkConfiguration();
       if (!configured) throw new Error('ระบบรับคำสั่งซื้อยังไม่พร้อมใช้งาน กรุณาติดต่อร้าน');
       const items = cart();
       if (!items.length) throw new Error('กรุณาเลือกหนังสือใส่ตะกร้าก่อน');
-      const data = await request('/rest/v1/rpc/create_book_order', {
+      const data = await request('/rest/v1/rpc/submit_book_order', {
         method:'POST', headers:{ 'Content-Type':'application/json' },
-        body:JSON.stringify({ p_customer_name:name, p_phone:phone, p_line_id:line_id, p_address:address, p_note:note, p_items:items.map(item => ({ book_id:item.id, quantity:item.quantity })) })
+        body:JSON.stringify({ p_customer_name:name, p_phone:phone, p_line_id:line_id, p_address:address, p_note:note, p_payment_method:payment_method, p_items:items.map(item => ({ book_id:item.id, quantity:item.quantity })) })
       });
-      return typeof data === 'string' ? data : data?.order_number || data?.orderNumber || '';
+      const order = typeof data === 'string' ? { order_number:data, order_id:'' } : { order_number:data?.order_number || data?.orderNumber || '', order_id:data?.order_id || '' };
+      try { write(LAST_ORDER_KEY,{...order,phone,payment_method}); } catch {}
+      return order;
+    },
+    lastOrder() { return read(LAST_ORDER_KEY,null); },
+    async getCustomerOrder(orderNumber, phone) {
+      checkConfiguration();
+      return request('/rest/v1/rpc/get_customer_order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_order_number:orderNumber,p_phone:phone})});
+    },
+    async getPaymentSettings() {
+      checkConfiguration();
+      const rows=await request('/rest/v1/shop_payment_settings?select=qr_image_url&id=eq.true');
+      return rows[0] || {qr_image_url:''};
+    },
+    async savePaymentQr(file) {
+      checkConfiguration();
+      if (!file || !['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 5*1024*1024) throw new Error('เลือกไฟล์ JPG, PNG หรือ WEBP ขนาดไม่เกิน 5 MB');
+      const userId=session()?.user?.id;
+      if (!userId) throw new Error('กรุณาเข้าสู่ระบบหลังร้านก่อน');
+      const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
+      const path=userId+'/'+crypto.randomUUID()+'.'+ext;
+      await request('/storage/v1/object/payment-qr/'+path,{method:'POST',headers:{'Content-Type':file.type},body:file},true);
+      const imageUrl=base+'/storage/v1/object/public/payment-qr/'+path;
+      await request('/rest/v1/shop_payment_settings?id=eq.true',{method:'PATCH',headers:{'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({qr_image_url:imageUrl,updated_at:new Date().toISOString()})},true);
+      return imageUrl;
+    },
+    async uploadPaymentSlip(order, file) {
+      checkConfiguration();
+      if (!order?.order_id || !file || !['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 5*1024*1024) throw new Error('เลือกรูปสลิป JPG, PNG หรือ WEBP ขนาดไม่เกิน 5 MB');
+      const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
+      const path=order.order_id+'/'+crypto.randomUUID()+'.'+ext;
+      await request('/storage/v1/object/payment-slips/'+path,{method:'POST',headers:{'Content-Type':file.type},body:file});
+      await request('/rest/v1/rpc/submit_order_payment_slip',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_order_id:order.order_id,p_order_number:order.order_number,p_phone:order.phone,p_slip_path:path})});
+    },
+    async signedPaymentSlip(path) {
+      checkConfiguration();
+      const data=await request('/storage/v1/object/sign/payment-slips/'+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expiresIn:3600})},true);
+      return data.signedURL?.startsWith('http')?data.signedURL:base+'/storage/v1'+data.signedURL;
     },
     async listOrders() {
       checkConfiguration();
@@ -210,6 +248,10 @@
     async updateOrderStatus(id, status) {
       checkConfiguration();
       return request('/rest/v1/rpc/update_book_order_status', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ p_order_id:id, p_status:status }) }, true);
+    },
+    async updateOrderWorkflow(id,status,shippingFee) {
+      checkConfiguration();
+      return request('/rest/v1/rpc/update_order_workflow',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_order_id:id,p_status:status,p_shipping_fee:Number(shippingFee)})},true);
     },
     toggleFavorite(id) {
       const ids = Store.favorites();

@@ -52,13 +52,21 @@ test('cart persists item quantities and removes items when quantity is cleared',
   assert.deepEqual(JSON.parse(JSON.stringify(store.cart())),[{id:'book-01',quantity:2}]);
   store.clearCart(); assert.equal(store.cart().length,0);
 });
-test('checkout sends contact details and only book ids/quantities; server returns the order number',async()=>{
+test('checkout stores the resumable order and sends the selected payment method',async()=>{
   let call;
-  const {store}=app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async (url,options)=>{call={url,options};return response('BK-261012-ABC123');});
+  const {store}=app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async (url,options)=>{call={url,options};return response({order_number:'BK-261012-ABC123',order_id:'order-uuid'});});
   store.addToCart('book-id',2);
-  const number=await store.placeOrder({name:'น้องนัท',phone:'0812345678',line_id:'nattan_book',address:'กรุงเทพมหานคร',note:'โทรก่อนส่ง'});
-  assert.equal(number,'BK-261012-ABC123'); assert.match(call.url,/rpc\/create_book_order$/);
-  assert.deepEqual(JSON.parse(call.options.body),{p_customer_name:'น้องนัท',p_phone:'0812345678',p_line_id:'nattan_book',p_address:'กรุงเทพมหานคร',p_note:'โทรก่อนส่ง',p_items:[{book_id:'book-id',quantity:2}]});
+  const order=await store.placeOrder({name:'น้องนัท',phone:'0812345678',line_id:'nattan_book',address:'กรุงเทพมหานคร',note:'โทรก่อนส่ง',payment_method:'qr'});
+  assert.deepEqual(JSON.parse(JSON.stringify(order)),{order_number:'BK-261012-ABC123',order_id:'order-uuid'}); assert.match(call.url,/rpc\/submit_book_order$/);
+  assert.deepEqual(JSON.parse(call.options.body),{p_customer_name:'น้องนัท',p_phone:'0812345678',p_line_id:'nattan_book',p_address:'กรุงเทพมหานคร',p_note:'โทรก่อนส่ง',p_payment_method:'qr',p_items:[{book_id:'book-id',quantity:2}]});
+  assert.deepEqual(JSON.parse(JSON.stringify(store.lastOrder())),{order_number:'BK-261012-ABC123',order_id:'order-uuid',phone:'0812345678',payment_method:'qr'});
+});
+test('customer can resume an order with its number and phone without exposing table reads',async()=>{
+  let call;
+  const {store}=app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async(url,options)=>{call={url,options};return response({order_number:'BK-123',status:'awaiting_payment'});});
+  const order=await store.getCustomerOrder('BK-123','0812345678');
+  assert.equal(order.status,'awaiting_payment');assert.match(call.url,/rpc\/get_customer_order$/);
+  assert.deepEqual(JSON.parse(call.options.body),{p_order_number:'BK-123',p_phone:'0812345678'});
 });
 test('order management requests are sent with the signed-in admin session',async()=>{
   const calls=[];
@@ -71,8 +79,9 @@ test('order management requests are sent with the signed-in admin session',async
   await store.login('owner@example.com','test');
   assert.equal((await store.listOrders())[0].order_number,'BK-123');
   await store.updateOrderStatus('order-id','confirmed');
-  const protectedCalls=calls.filter(call=>call.url.includes('/rest/v1/orders?') || call.url.includes('/rpc/update_book_order_status'));
-  assert.equal(protectedCalls.length,2);
+  await store.updateOrderWorkflow('order-id','awaiting_payment',35);
+  const protectedCalls=calls.filter(call=>call.url.includes('/rest/v1/orders?') || call.url.includes('/rpc/update_book_order_status') || call.url.includes('/rpc/update_order_workflow'));
+  assert.equal(protectedCalls.length,3);
   assert(protectedCalls.every(call=>call.options.headers.Authorization==='Bearer admin-token'));
 });
 test('validation and storage exhaustion preserve existing books', async () => {
