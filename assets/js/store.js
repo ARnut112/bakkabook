@@ -3,6 +3,7 @@
   const BOOK_KEY = 'bakkabook.books.v1';
   const SESSION_KEY = 'bakkabook.session.v2.' + config.supabaseUrl;
   const FAVORITE_KEY = 'bakkabook.favorites.v1';
+  const CART_KEY = 'bakkabook.cart.v1';
   const configured = config.mode === 'live';
   const base = config.supabaseUrl;
   let refreshing = null;
@@ -25,6 +26,12 @@
     try { storage.setItem(key, JSON.stringify(value)); }
     catch { throw new Error('พื้นที่จัดเก็บในเบราว์เซอร์ไม่พอ ลองลดจำนวนหรือขนาดรูปภาพแล้วบันทึกอีกครั้ง'); }
   }
+  function cart() {
+    const value = read(CART_KEY, []);
+    if (!Array.isArray(value)) return [];
+    return value.filter(item => item && typeof item.id === 'string' && Number.isInteger(item.quantity) && item.quantity > 0 && item.quantity <= 99);
+  }
+  function saveCart(items) { write(CART_KEY, items); window.dispatchEvent(new CustomEvent('cart-changed')); }
   function session() { return read(SESSION_KEY, null, sessionStorage); }
   function saveSession(value) {
     write(SESSION_KEY, { ...value, expires_at: Date.now() + value.expires_in * 1000 }, sessionStorage);
@@ -171,6 +178,39 @@
       finally { sessionStorage.removeItem(SESSION_KEY); }
     },
     favorites() { const ids = read(FAVORITE_KEY, []); return Array.isArray(ids) ? ids : []; },
+    cart,
+    addToCart(id, quantity = 1) {
+      quantity = Math.min(99,Math.max(1,Math.floor(Number(quantity) || 1)));
+      const items = cart(); const item = items.find(row => row.id === id);
+      if (item) item.quantity = Math.min(99, item.quantity + quantity);
+      else items.push({ id, quantity });
+      saveCart(items); return items;
+    },
+    setCartQuantity(id, quantity) {
+      const items = cart().filter(item => item.id !== id);
+      if (quantity > 0) items.push({ id, quantity:Math.min(99, Math.floor(quantity)) });
+      saveCart(items); return items;
+    },
+    clearCart() { saveCart([]); },
+    async placeOrder({ name, phone, address, note = '' }) {
+      checkConfiguration();
+      if (!configured) throw new Error('ระบบรับคำสั่งซื้อยังไม่พร้อมใช้งาน กรุณาติดต่อร้าน');
+      const items = cart();
+      if (!items.length) throw new Error('กรุณาเลือกหนังสือใส่ตะกร้าก่อน');
+      const data = await request('/rest/v1/rpc/create_book_order', {
+        method:'POST', headers:{ 'Content-Type':'application/json' },
+        body:JSON.stringify({ p_customer_name:name, p_phone:phone, p_address:address, p_note:note, p_items:items.map(item => ({ book_id:item.id, quantity:item.quantity })) })
+      });
+      return typeof data === 'string' ? data : data?.order_number || data?.orderNumber || '';
+    },
+    async listOrders() {
+      checkConfiguration();
+      return request('/rest/v1/orders?select=*,order_items(*)&order=created_at.desc', {}, true);
+    },
+    async updateOrderStatus(id, status) {
+      checkConfiguration();
+      return request('/rest/v1/rpc/update_book_order_status', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ p_order_id:id, p_status:status }) }, true);
+    },
     toggleFavorite(id) {
       const ids = Store.favorites();
       const next = ids.includes(id) ? ids.filter(item => item !== id) : [...ids, id];

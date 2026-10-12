@@ -35,6 +35,11 @@ const output = path.join(root,'test-results'); fs.mkdirSync(output,{recursive:tr
     await page.locator('[data-category="ท่องเที่ยว"]').click(); assert(await page.locator('.empty-state').isVisible());
     await page.locator('[data-reset]').last().click(); assert.equal(await page.locator('#book-grid .book-card').count(),8);
     await page.locator('[data-save="book-01"]').click(); assert.equal(await page.locator('#favorite-count').textContent(),'1');
+    await page.goto(base+'index.html'); await page.locator('[data-cart="book-01"]').click(); assert.equal(await page.locator('#cart-count').textContent(),'1');
+    await page.goto(base+'cart.html'); await page.waitForSelector('#cart-content:not([hidden])');
+    assert.equal(await page.locator('.cart-item').count(),1); await page.locator('[data-quantity="book-01"]').fill('2');
+    assert.equal(await page.locator('#cart-count').textContent(),'2'); assert.equal(await page.locator('#cart-total').textContent(),'฿570');
+    await page.locator('[data-remove-cart="book-01"]').click(); assert(await page.locator('#cart-empty').isVisible()); assert(!await page.locator('#place-order').isEnabled());
     await page.goto(base+'index.html?shelf=1'); await page.waitForSelector('.book-card'); assert.equal(await page.locator('.book-card').count(),1);
     await page.locator('.book-card h3 a').click(); await page.waitForSelector('.product-info');
     assert.equal(await page.locator('.product-info h1').textContent(),'ในวันที่ดอกไม้ผลิบาน');
@@ -78,7 +83,7 @@ const output = path.join(root,'test-results'); fs.mkdirSync(output,{recursive:tr
     await page.waitForFunction(()=>document.getElementById('stat-total').textContent==='12');
     for (const width of [390,768,1280]) {
       await page.setViewportSize({width,height:900});
-      for (const [name,url,ready] of [['home','index.html','.book-card'],['product','product.html?id=book-01','.product-info'],['admin','admin.html','#dashboard:not([hidden])']]) {
+      for (const [name,url,ready] of [['home','index.html','.book-card'],['product','product.html?id=book-01','.product-info'],['cart','cart.html','#cart-content:not([hidden])'],['admin','admin.html','#dashboard:not([hidden])']]) {
         await page.goto(base+url); await page.waitForSelector(ready);
         const overflow = await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth);
         assert(!overflow, name+' overflows at '+width);
@@ -88,6 +93,6 @@ const output = path.join(root,'test-results'); fs.mkdirSync(output,{recursive:tr
       assert(!await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth),'editor overflows at '+width);
       if(width===390) await page.screenshot({path:path.join(output,'editor-mobile.png'),fullPage:true});
     }
-    assert.deepEqual(errors,[]); console.log('PASS: search + filter + both sorts, empty/reset, favorites, gallery, cover-reader UI, CRUD persistence, draft privacy, stock, dialogs, responsive 390/768/1280, no JavaScript errors.');
+    assert.deepEqual(errors,[]); console.log('PASS: search + filter + both sorts, empty/reset, favorites, cart + quantities, gallery, cover-reader UI, CRUD persistence, draft privacy, stock, responsive 390/768/1280, no JavaScript errors.');
   } finally { await browser.close(); if(server) server.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});

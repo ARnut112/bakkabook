@@ -10,7 +10,7 @@ function storage() {
   return { getItem:key => data.get(key) ?? null, setItem:(key,value) => data.set(key,value), removeItem:key => data.delete(key) };
 }
 function app(config = {}, fetch = () => { throw new Error('Unexpected network request'); }) {
-  const context = vm.createContext({ window:{ BAKKA_CONFIG:config }, localStorage:storage(), sessionStorage:storage(), structuredClone, crypto:webcrypto, URL, AbortSignal, atob, fetch });
+  const context = vm.createContext({ window:{ BAKKA_CONFIG:config, dispatchEvent:()=>{} }, CustomEvent:class { constructor(type) { this.type=type; } }, localStorage:storage(), sessionStorage:storage(), structuredClone, crypto:webcrypto, URL, AbortSignal, atob, fetch });
   for (const file of ['data.js','configuration.js','store.js']) vm.runInContext(fs.readFileSync(path.join(root,'assets/js',file),'utf8'),context);
   return { store:context.window.BakkaStore, context, seed:context.window.BAKKA_SEED };
 }
@@ -44,6 +44,36 @@ test('search, category, sorting, favorites, and reset do not mutate source', asy
   store.toggleFavorite(books[0].id);
   assert.equal(store.filter(books,{favorites:true}).length,0);
   assert.equal(store.filter(books).length,12); assert.equal(books.map(b=>b.id).join(),original);
+});
+test('cart persists item quantities and removes items when quantity is cleared',()=>{
+  const {store}=app(); store.addToCart('book-01'); store.addToCart('book-01',2); store.addToCart('book-02');
+  assert.deepEqual(JSON.parse(JSON.stringify(store.cart())),[{id:'book-01',quantity:3},{id:'book-02',quantity:1}]);
+  store.setCartQuantity('book-01',2); store.setCartQuantity('book-02',0);
+  assert.deepEqual(JSON.parse(JSON.stringify(store.cart())),[{id:'book-01',quantity:2}]);
+  store.clearCart(); assert.equal(store.cart().length,0);
+});
+test('checkout sends only book ids and quantities; server returns the order number',async()=>{
+  let call;
+  const {store}=app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async (url,options)=>{call={url,options};return response('BK-261012-ABC123');});
+  store.addToCart('book-id',2);
+  const number=await store.placeOrder({name:'น้องนัท',phone:'0812345678',address:'กรุงเทพมหานคร',note:'โทรก่อนส่ง'});
+  assert.equal(number,'BK-261012-ABC123'); assert.match(call.url,/rpc\/create_book_order$/);
+  assert.deepEqual(JSON.parse(call.options.body),{p_customer_name:'น้องนัท',p_phone:'0812345678',p_address:'กรุงเทพมหานคร',p_note:'โทรก่อนส่ง',p_items:[{book_id:'book-id',quantity:2}]});
+});
+test('order management requests are sent with the signed-in admin session',async()=>{
+  const calls=[];
+  const {store}=app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async (url,options)=>{
+    calls.push({url,options});
+    if(url.includes('/auth/v1/token')) return response({access_token:'admin-token',refresh_token:'refresh',expires_in:3600,user:{id:'owner'}});
+    if(url.includes('/admin_users')) return response([{user_id:'owner'}]);
+    return response(url.includes('/orders?') ? [{order_number:'BK-123'}] : null);
+  });
+  await store.login('owner@example.com','test');
+  assert.equal((await store.listOrders())[0].order_number,'BK-123');
+  await store.updateOrderStatus('order-id','confirmed');
+  const protectedCalls=calls.filter(call=>call.url.includes('/rest/v1/orders?') || call.url.includes('/rpc/update_book_order_status'));
+  assert.equal(protectedCalls.length,2);
+  assert(protectedCalls.every(call=>call.options.headers.Authorization==='Bearer admin-token'));
 });
 test('validation and storage exhaustion preserve existing books', async () => {
   const { store, context, seed } = app();

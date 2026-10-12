@@ -18,7 +18,8 @@
     chevron: '<path d="m9 5 7 7-7 7"/>',
     heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',
     copy: '<rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V3H3v13h5"/>',
-    image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="2"/><path d="m3 17 6-6 4 4 3-3 5 5"/>'
+    image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="2"/><path d="m3 17 6-6 4 4 3-3 5 5"/>',
+    bag: '<path d="M5 8h14l1 13H4L5 8Zm4 0a3 3 0 0 1 6 0"/>'
   };
   function icon(name, className = '') { return `<svg class="icon ${className}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.book}</svg>`; }
   function escape(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])); }
@@ -39,8 +40,8 @@
     return `<div class="announcement">A LITTLE BOOK, A BIG WORLD. <span>เรื่องราวดี ๆ เริ่มต้นที่หนังสือสักเล่ม</span></div>
       <header class="site-header"><div class="container header-inner">
       <a class="brand" href="index.html" aria-label="Bakkabook หน้าแรก"><span class="brand-mark">b</span><span>bakkabook<span class="brand-dot">.</span><small>INDEPENDENT BOOKSHOP</small></span></a>
-      <nav class="main-nav" aria-label="เมนูหลัก"><a href="index.html#collection" ${active === 'shop' ? 'class="active" aria-current="page"' : ''}>ร้านหนังสือ</a><a href="index.html?featured=1#collection">คัดสรรโดยเรา</a><a href="index.html#our-story">เรื่องของร้าน</a></nav>
-      <div class="header-actions"><a class="icon-button shelf-link" href="index.html?shelf=1#collection" aria-label="ชั้นหนังสือของฉัน">${icon('bookmark')}<span id="favorite-count">0</span></a><a class="admin-link" href="admin.html">${icon('grid')}<span>หลังร้าน</span></a></div>
+      <nav class="main-nav" aria-label="เมนูหลัก"><a href="index.html#collection" ${active === 'shop' ? 'class="active" aria-current="page"' : ''}>ร้านหนังสือ</a><a href="index.html?featured=1#collection">หนังสือแนะนำ</a></nav>
+      <div class="header-actions"><a class="icon-button shelf-link" href="cart.html" aria-label="ตะกร้าสินค้า">${icon('bag')}<span id="cart-count">0</span></a><a class="icon-button shelf-link" href="index.html?shelf=1#collection" aria-label="ชั้นหนังสือของฉัน">${icon('bookmark')}<span id="favorite-count">0</span></a><a class="admin-link" href="admin.html">${icon('grid')}<span>หลังร้าน</span></a></div>
       </div></header>`;
   }
   function footer() {
@@ -48,6 +49,7 @@
     return `<footer class="site-footer"><div class="container footer-top"><a class="brand" href="index.html"><span class="brand-mark">b</span><span>bakkabook.<small>A HOME FOR GOOD STORIES</small></span></a><p>ร้านเล็ก ๆ สำหรับคนที่เชื่อว่า<br>หนังสือดี ๆ เปลี่ยนวันธรรมดาให้พิเศษได้</p><a href="index.html#collection">ไปหาหนังสือเล่มถัดไป ${icon('arrow')}</a></div><div class="container footer-bottom"><span>© 2026 Bakkabook · Made for the love of reading.</span><span>${note}</span></div></footer>`;
   }
   function updateFavorites() { const count = document.getElementById('favorite-count'); if (count) count.textContent = BakkaStore.favorites().length; }
+  function updateCartCount() { const count = document.getElementById('cart-count'); if (count) count.textContent = BakkaStore.cart().reduce((total,item) => total + item.quantity, 0); }
   function card(book, index = 0) {
     const saved = BakkaStore.favorites().includes(book.id);
     return `<article class="book-card" style="--card-delay:${Math.min(index,7) * 35}ms">
@@ -55,15 +57,22 @@
       ${book.featured ? '<span class="book-label">BAKKA PICKS</span>' : ''}
       <button class="save-book icon-button ${saved ? 'saved' : ''}" data-save="${escape(book.id)}" aria-label="${saved ? 'นำออกจาก' : 'เก็บเข้า'}ชั้นหนังสือ: ${escape(book.title)}" aria-pressed="${saved}">${icon('bookmark')}</button>
       <a href="product.html?id=${encodeURIComponent(book.id)}" tabindex="-1" aria-hidden="true"><img src="${escape(imageUrl(book.images?.[0]))}" alt="" loading="lazy" width="320" height="460"></a>
-      </div><div class="book-card-info"><span class="eyebrow book-category">${escape(book.category)}</span><h3><a href="product.html?id=${encodeURIComponent(book.id)}">${escape(book.title)}</a></h3><p>${escape(book.author)}</p><div class="book-card-bottom"><strong>${money(book.price)}</strong><span class="availability ${book.stock === 0 ? 'sold-out' : ''}">${book.stock ? 'พร้อมส่ง' : 'สินค้าหมด'}</span><a class="card-arrow" href="product.html?id=${encodeURIComponent(book.id)}" aria-label="ดู ${escape(book.title)}">${icon('arrow')}</a></div></div></article>`;
+      </div><div class="book-card-info"><span class="eyebrow book-category">${escape(book.category)}</span><h3><a href="product.html?id=${encodeURIComponent(book.id)}">${escape(book.title)}</a></h3><p>${escape(book.author)}</p><div class="book-card-bottom"><strong>${money(book.price)}</strong><span class="availability ${book.stock === 0 ? 'sold-out' : ''}">${book.stock ? 'พร้อมส่ง' : 'สินค้าหมด'}</span>${book.stock > 0 ? `<button class="card-add-cart icon-button" data-cart="${escape(book.id)}" aria-label="เพิ่ม ${escape(book.title)} ลงตะกร้า">${icon('bag')}</button>` : ''}<a class="card-arrow" href="product.html?id=${encodeURIComponent(book.id)}" aria-label="ดู ${escape(book.title)}">${icon('arrow')}</a></div></div></article>`;
   }
   function empty(title, description, action = '') { return `<div class="empty-state">${icon('book')}<h3>${escape(title)}</h3><p>${escape(description)}</p>${action}</div>`; }
   function initialize() {
     document.querySelectorAll('[data-site-header]').forEach(el => el.innerHTML = header(el.dataset.siteHeader));
     document.querySelectorAll('[data-site-footer]').forEach(el => el.innerHTML = footer());
     document.querySelectorAll('[data-icon]').forEach(el => el.innerHTML = icon(el.dataset.icon));
-    try { updateFavorites(); } catch {}
+    try { updateFavorites(); updateCartCount(); } catch {}
+    window.addEventListener('cart-changed', updateCartCount);
     document.addEventListener('click', event => {
+      const cartButton = event.target.closest('[data-cart]');
+      if (cartButton) {
+        try { BakkaStore.addToCart(cartButton.dataset.cart); toast('เพิ่มหนังสือลงตะกร้าแล้ว'); }
+        catch (error) { toast(error.message, true); }
+        return;
+      }
       const button = event.target.closest('[data-save]'); if (!button) return;
       try {
         const saved = BakkaStore.toggleFavorite(button.dataset.save);
@@ -76,6 +85,6 @@
     });
     document.addEventListener('error', event => { if (event.target.tagName === 'IMG' && !event.target.dataset.fallback) { event.target.dataset.fallback = '1'; event.target.src = 'assets/covers/bloom.svg'; } }, true);
   }
-  window.BakkaUI = { icon, escape, imageUrl, money, toast, card, empty, updateFavorites };
+  window.BakkaUI = { icon, escape, imageUrl, money, toast, card, empty, updateFavorites, updateCartCount };
   initialize();
 })();

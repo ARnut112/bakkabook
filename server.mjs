@@ -10,7 +10,7 @@ const server = http.createServer(async (req, res) => {
     const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
     const relative = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
     const file = path.resolve(root, relative);
-    const allowed = /^(index\.html|product\.html|admin\.html|config\.js|assets\/[a-zA-Z0-9_./-]+)$/.test(relative);
+    const allowed = /^(index\.html|product\.html|cart\.html|admin\.html|config\.js|assets\/[a-zA-Z0-9_./-]+)$/.test(relative);
     if (!allowed || !file.startsWith(root + path.sep) || relative.split('/').includes('..') || !types[path.extname(file)]) {
       res.writeHead(404); return res.end('Not found');
     }

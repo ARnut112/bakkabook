@@ -2,7 +2,7 @@
   const { icon, escape, imageUrl, money, toast, empty } = BakkaUI;
   const $ = id => document.getElementById(id);
   const form = $('book-form');
-  let books = [], editingId = null, images = [], suggestion = null, pendingDelete = null;
+  let books = [], orders = [], editingId = null, images = [], suggestion = null, pendingDelete = null;
   let dirty = false, busy = false, editorVersion = 0;
   $('book-category').innerHTML = BAKKA_CATEGORIES.map(category => `<option>${escape(category)}</option>`).join('');
   $('cover-presets').innerHTML = BAKKA_SEED.slice(0,6).map(book => `<button type="button" data-preset="${escape(book.cover)}" aria-label="ใช้ปกตัวอย่าง ${escape(book.title)}"><img src="${imageUrl(book.images[0])}" alt="${escape(book.title)}"></button>`).join('');
@@ -15,7 +15,8 @@
     $('analyze-cover').disabled = true; $('analyze-cover').title = 'ยังไม่สามารถใช้ตัวช่วยอ่านปกได้';
   }
   function showError(id, message) { $(id).textContent = message; $(id).hidden = !message; }
-  function showDashboard() { $('editor').hidden = true; $('login-section').hidden = true; $('dashboard').hidden = false; window.scrollTo(0,0); }
+  function showDashboard() { $('editor').hidden = true; $('orders-dashboard').hidden = true; $('login-section').hidden = true; $('dashboard').hidden = false; $('admin-page-title').textContent = 'จัดการหนังสือ'; $('nav-books').classList.add('active'); $('nav-orders').classList.remove('active'); window.scrollTo(0,0); }
+  function showOrders() { $('editor').hidden = true; $('dashboard').hidden = true; $('login-section').hidden = true; $('orders-dashboard').hidden = false; $('admin-page-title').textContent = 'คำสั่งซื้อ'; $('nav-books').classList.remove('active'); $('nav-orders').classList.add('active'); window.scrollTo(0,0); loadOrders(); }
   function renderTable() {
     const query = $('admin-search').value;
     const status = $('status-filter').value;
@@ -32,6 +33,16 @@
     showError('dashboard-error', '');
     try { books = await BakkaStore.list(true); renderTable(); }
     catch (error) { showError('dashboard-error', 'โหลดข้อมูลไม่สำเร็จ: ' + error.message + ' — กรุณารีเฟรชเพื่อลองใหม่'); }
+  }
+  const orderStatuses = { pending:'รอยืนยัน', confirmed:'ยืนยันแล้ว', shipped:'จัดส่งแล้ว', cancelled:'ยกเลิก' };
+  async function loadOrders() {
+    showError('orders-error',''); $('orders-table-body').innerHTML = ''; $('orders-empty').hidden = true;
+    try {
+      orders = await BakkaStore.listOrders();
+      $('orders-count').textContent = `${orders.length} รายการ`;
+      $('orders-empty').hidden = orders.length > 0;
+      $('orders-table-body').innerHTML = orders.map(order => `<tr data-order-row="${escape(order.id)}"><td><strong>${escape(order.order_number)}</strong><br><span>${new Date(order.created_at).toLocaleString('th-TH')}</span></td><td><div class="order-customer"><strong>${escape(order.customer_name)}</strong><a href="tel:${escape(order.phone)}">${escape(order.phone)}</a><span>${escape(order.address)}</span>${order.note ? `<span>หมายเหตุ: ${escape(order.note)}</span>` : ''}</div></td><td><div class="order-item-list">${(order.order_items || []).map(item => `${escape(item.book_title)} × ${item.quantity} · ${money(item.unit_price * item.quantity)}`).join('<br>')}</div></td><td><strong>${money(order.total)}</strong><br><span>ยังไม่รวมค่าส่ง</span></td><td><label class="sr-only" for="order-status-${escape(order.id)}">สถานะ ${escape(order.order_number)}</label><select id="order-status-${escape(order.id)}" data-order-status="${escape(order.id)}" ${order.status === 'cancelled' ? 'disabled' : ''}>${Object.entries(orderStatuses).map(([value,label]) => `<option value="${value}" ${value === order.status ? 'selected' : ''}>${label}</option>`).join('')}</select></td><td><button class="button secondary order-save" data-save-order="${escape(order.id)}" ${order.status === 'cancelled' ? 'disabled' : ''}>บันทึก</button></td></tr>`).join('');
+    } catch (error) { showError('orders-error','โหลดคำสั่งซื้อไม่สำเร็จ: ' + error.message); }
   }
   function renderImages() {
     $('image-preview-list').innerHTML = images.map((url,i) => `<div class="image-preview-item"><img src="${escape(imageUrl(url))}" alt="รูปที่ ${i+1}"><button type="button" data-remove-image="${i}" aria-label="นำรูปที่ ${i+1} ออก">×</button>${i === 0 ? '<small>ปกหน้าร้าน</small>' : ''}</div>`).join('');
@@ -91,7 +102,15 @@
   $('add-book').addEventListener('click', () => openEditor());
   $('start-ai').addEventListener('click', () => { openEditor(); $('ai-card').scrollIntoView({ block:'center' }); });
   $('back-to-list').addEventListener('click',leaveEditor); $('cancel-edit').addEventListener('click',leaveEditor);
-  $('nav-books').addEventListener('click', () => { if (!$('editor').hidden) leaveEditor(); });
+  $('nav-books').addEventListener('click', () => { if (!$('editor').hidden) leaveEditor(); else { showDashboard(); loadBooks(); } });
+  $('nav-orders').addEventListener('click', () => {
+    if (!$('editor').hidden) {
+      if (busy || (dirty && !confirm('มีข้อมูลที่ยังไม่ได้บันทึก ต้องการไปหน้าคำสั่งซื้อโดยไม่บันทึกหรือไม่?'))) return;
+      dirty = false; editorVersion++;
+    }
+    showOrders();
+  });
+  $('refresh-orders').addEventListener('click',loadOrders);
   $('admin-search').addEventListener('input',renderTable); $('status-filter').addEventListener('change',renderTable);
   form.addEventListener('input', () => { dirty = true; }); form.addEventListener('change', () => { dirty = true; });
   window.addEventListener('beforeunload', event => { if (dirty) { event.preventDefault(); event.returnValue = ''; } });
@@ -112,6 +131,12 @@
     if (preset && !busy) {
       if (images.length >= 4) return showError('form-error','ใส่รูปได้สูงสุด 4 รูป');
       images.push('assets/covers/' + preset.dataset.preset + '.svg'); renderImages(); dirty = true;
+    }
+    const saveOrder = event.target.closest('[data-save-order]');
+    if (saveOrder) {
+      const select = document.querySelector(`[data-order-status="${CSS.escape(saveOrder.dataset.saveOrder)}"]`);
+      saveOrder.disabled = true;
+      BakkaStore.updateOrderStatus(saveOrder.dataset.saveOrder,select.value).then(async () => { toast('อัปเดตสถานะคำสั่งซื้อแล้ว'); await loadOrders(); await loadBooks(); }).catch(error => showError('orders-error','บันทึกสถานะไม่สำเร็จ: ' + error.message)).finally(() => { saveOrder.disabled = false; });
     }
     if (event.target.closest('#apply-ai') && suggestion) {
       if (['title','author'].some(key => form.elements[key].value.trim()) && !confirm('นำชื่อที่อ่านได้มาแทนชื่อหนังสือหรือผู้เขียนเดิมหรือไม่?')) return;
@@ -156,7 +181,7 @@
     if (busy || (dirty && !confirm('ออกจากระบบโดยไม่บันทึกการแก้ไขหรือไม่?'))) return;
     dirty = false;
     try { await BakkaStore.logout(); } catch {}
-    $('dashboard').hidden = true; $('editor').hidden = true; $('login-section').hidden = false; $('logout').hidden = true;
+    $('dashboard').hidden = true; $('orders-dashboard').hidden = true; $('editor').hidden = true; $('login-section').hidden = false; $('logout').hidden = true;
   });
   try {
     if (await BakkaStore.isAdmin()) { showDashboard(); $('logout').hidden = BakkaStore.mode !== 'live'; await loadBooks(); }
