@@ -17,7 +17,7 @@ node server.mjs
 - `index.html` หน้าร้าน: หนังสือ 12 เล่ม ค้นหาชื่อ/ผู้เขียน กรองหมวดหมู่ เรียงราคา รายการคัดสรร และชั้นหนังสือที่บันทึกไว้
 - `product.html?id=book-01` รายละเอียด: ราคา เรื่องย่อ ข้อมูลเล่ม แกลเลอรีรูป สถานะสต็อก เพิ่มลงตะกร้า และหนังสือที่เกี่ยวข้อง
 - `cart.html` ตะกร้าและสั่งซื้อ: แก้จำนวน กรอกข้อมูลจัดส่ง/ช่องทางติดต่อ แล้วไปหน้า QR ได้ทันที
-- `order.html` ติดตามออเดอร์ด้วยเลขคำสั่งซื้อและเบอร์โทร ดู QR ตามยอดรวมจัดส่ง และแนบสลิปได้
+- `order.html` ติดตามออเดอร์ด้วยเบอร์โทร ดู QR ตามยอดรวม และแนบสลิปได้ หลังส่งสลิประบบแสดงข้อความขอบคุณและให้กลับมาติดตามสถานะได้
 - `admin.html` หลังร้าน: จัดการหนังสือ ตรวจสลิปด้วยตนเอง และอัปเดตสถานะออเดอร์จนจัดส่ง
 
 รองรับมือถือ แท็บเล็ต และคอมพิวเตอร์ ใช้ HTML, CSS และ Vanilla JavaScript
@@ -34,7 +34,7 @@ node server.mjs
 
 - `config.js` ใส่ Supabase URL และ publishable / anon key
 - `supabase/schema.sql` สร้างตารางหนังสือ สิทธิ์ RLS และ Storage
-- `supabase/orders.sql` เปิดระบบรับออเดอร์แบบ guest, QR, แนบสลิป และหน้าจัดการคำสั่งซื้อ
+- `supabase/orders.sql` เปิดระบบรับออเดอร์แบบ guest, QR, แนบสลิป, ค้นหารายการด้วยเบอร์โทร และแสดงจำนวนหนังสือที่กำลังรอชำระ/ตรวจสลิป
 - `supabase/functions/book-assistant/index.ts` ให้ AI อ่านชื่อหนังสือและผู้เขียนจากปก
 - Gemini API key อยู่ใน Supabase Edge Function Secrets เท่านั้น
 
@@ -43,7 +43,7 @@ node server.mjs
 ## โครงสร้างไฟล์
 
 ```text
-index.html / product.html / cart.html / admin.html
+index.html / product.html / cart.html / order.html / admin.html
 config.js
 assets/
   css/style.css

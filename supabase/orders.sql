@@ -224,6 +224,48 @@ $$;
 revoke all on function public.get_customer_order(text,text) from public;
 grant execute on function public.get_customer_order(text,text) to anon, authenticated;
 
+create or replace function public.get_customer_orders_by_phone(p_phone text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  v_phone text := regexp_replace(coalesce(p_phone,''),'[^0-9]','','g');
+  v_orders jsonb;
+begin
+  if v_phone !~ '^[0-9]{8,15}$' then raise exception 'กรุณากรอกเบอร์โทรศัพท์ที่ใช้สั่งซื้อ'; end if;
+  select coalesce(jsonb_agg(jsonb_build_object(
+    'order_id',q.id,'order_number',q.order_number,'created_at',q.created_at,'status',q.status,
+    'payment_method',q.payment_method,'subtotal',q.total,'shipping_fee',q.shipping_fee,
+    'amount_due',q.total+q.shipping_fee,'slip_submitted',q.slip_path is not null,'items',q.items
+  ) order by q.created_at desc),'[]'::jsonb)
+  into v_orders
+  from (
+    select o.id,o.order_number,o.created_at,o.status,o.payment_method,o.total,o.shipping_fee,o.slip_path,
+      (select coalesce(jsonb_agg(jsonb_build_object('book_title',i.book_title,'unit_price',i.unit_price,'quantity',i.quantity) order by i.id),'[]'::jsonb)
+        from public.order_items i where i.order_id=o.id) as items
+    from public.orders o
+    where regexp_replace(o.phone,'[^0-9]','','g')=v_phone
+    order by o.created_at desc
+  ) q;
+  if jsonb_array_length(v_orders)=0 then raise exception 'ไม่พบคำสั่งซื้อจากเบอร์นี้ กรุณาตรวจสอบเบอร์โทรศัพท์'; end if;
+  return v_orders;
+end;
+$$;
+revoke all on function public.get_customer_orders_by_phone(text) from public;
+grant execute on function public.get_customer_orders_by_phone(text) to anon, authenticated;
+
+create or replace function public.get_book_reservation_status(p_book_id uuid)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object(
+    'awaiting_payment',coalesce(sum(i.quantity) filter(where o.status='awaiting_payment'),0)::integer,
+    'slip_submitted',coalesce(sum(i.quantity) filter(where o.status='slip_submitted'),0)::integer,
+    'other_pending',coalesce(sum(i.quantity) filter(where o.status in ('pending','contacted')),0)::integer
+  )
+  from public.order_items i join public.orders o on o.id=i.order_id
+  where i.book_id=p_book_id and o.status in ('pending','contacted','awaiting_payment','slip_submitted')
+    and exists (select 1 from public.books b where b.id=p_book_id and b.status='published');
+$$;
+revoke all on function public.get_book_reservation_status(uuid) from public;
+grant execute on function public.get_book_reservation_status(uuid) to anon, authenticated;
+
 create or replace function public.submit_order_payment_slip(p_order_id uuid,p_order_number text,p_phone text,p_slip_path text)
 returns void language plpgsql security definer set search_path = '' as $$
 begin

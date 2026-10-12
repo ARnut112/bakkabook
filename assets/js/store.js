@@ -211,6 +211,14 @@
       checkConfiguration();
       return request('/rest/v1/rpc/get_customer_order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_order_number:orderNumber,p_phone:phone})});
     },
+    async getCustomerOrdersByPhone(phone) {
+      checkConfiguration();
+      return request('/rest/v1/rpc/get_customer_orders_by_phone',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_phone:phone})});
+    },
+    async getBookReservationStatus(bookId) {
+      checkConfiguration();
+      return request('/rest/v1/rpc/get_book_reservation_status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_book_id:bookId})});
+    },
     async getPaymentSettings() {
       checkConfiguration();
       const rows=await request('/rest/v1/shop_payment_settings?select=qr_image_url&id=eq.true');

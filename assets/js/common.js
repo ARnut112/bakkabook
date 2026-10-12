@@ -40,7 +40,7 @@
     return `<div class="announcement">A LITTLE BOOK, A BIG WORLD. <span>เรื่องราวดี ๆ เริ่มต้นที่หนังสือสักเล่ม</span></div>
       <header class="site-header"><div class="container header-inner">
       <a class="brand" href="index.html" aria-label="Bakkabook หน้าแรก"><span class="brand-mark">b</span><span>bakkabook<span class="brand-dot">.</span><small>INDEPENDENT BOOKSHOP</small></span></a>
-      <nav class="main-nav" aria-label="เมนูหลัก"><a href="index.html#collection" ${active === 'shop' ? 'class="active" aria-current="page"' : ''}>ร้านหนังสือ</a><a href="index.html?featured=1#collection">หนังสือแนะนำ</a></nav>
+      <nav class="main-nav" aria-label="เมนูหลัก"><a href="index.html#collection" ${active === 'shop' ? 'class="active" aria-current="page"' : ''}>ร้านหนังสือ</a><a href="index.html?featured=1#collection">หนังสือแนะนำ</a><a href="order.html" ${active === 'orders' ? 'class="active" aria-current="page"' : ''}>ติดตามคำสั่งซื้อ</a></nav>
       <div class="header-actions"><a class="icon-button shelf-link" href="cart.html" aria-label="ตะกร้าสินค้า">${icon('bag')}<span id="cart-count">0</span></a><a class="icon-button shelf-link" href="index.html?shelf=1#collection" aria-label="ชั้นหนังสือของฉัน">${icon('bookmark')}<span id="favorite-count">0</span></a><a class="admin-link" href="admin.html">${icon('grid')}<span>หลังร้าน</span></a></div>
       </div></header>`;
   }

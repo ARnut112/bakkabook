@@ -68,6 +68,19 @@ test('customer can resume an order with its number and phone without exposing ta
   assert.equal(order.status,'awaiting_payment');assert.match(call.url,/rpc\/get_customer_order$/);
   assert.deepEqual(JSON.parse(call.options.body),{p_order_number:'BK-123',p_phone:'0812345678'});
 });
+test('customer can find all recent orders by phone and only sees the phone lookup RPC',async()=>{
+  let call;
+  const {store}=app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async(url,options)=>{call={url,options};return response([{order_number:'BK-123',status:'awaiting_payment'}]);});
+  const orders=await store.getCustomerOrdersByPhone('0812345678');
+  assert.equal(orders[0].status,'awaiting_payment');assert.match(call.url,/rpc\/get_customer_orders_by_phone$/);
+  assert.deepEqual(JSON.parse(call.options.body),{p_phone:'0812345678'});
+});
+test('product availability reveals only reservation counts, not buyer details',async()=>{
+  let call;
+  const {store}=app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async(url,options)=>{call={url,options};return response({awaiting_payment:1,slip_submitted:0,other_pending:0});});
+  assert.deepEqual(JSON.parse(JSON.stringify(await store.getBookReservationStatus('book-id'))),{awaiting_payment:1,slip_submitted:0,other_pending:0});assert.match(call.url,/rpc\/get_book_reservation_status$/);
+  assert.deepEqual(JSON.parse(call.options.body),{p_book_id:'book-id'});
+});
 test('order management requests are sent with the signed-in admin session',async()=>{
   const calls=[];
   const {store}=app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async (url,options)=>{

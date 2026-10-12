@@ -1,52 +1,69 @@
 (async function () {
   const $ = id => document.getElementById(id);
   const statusLabels = {pending:'ร้านกำลังเตรียมคำสั่งซื้อ',contacted:'ร้านติดต่อแล้ว · รอชำระเงิน',awaiting_payment:'รอชำระด้วย QR',slip_submitted:'ส่งสลิปแล้ว · รอร้านตรวจสอบ',confirmed:'ร้านยืนยันการชำระแล้ว',shipped:'จัดส่งแล้ว',cancelled:'คำสั่งซื้อถูกยกเลิก'};
-  let order = null;
+  const phoneField = $('lookup-phone');
+  const orderList = $('order-list');
   let busy = false;
   const saved = BakkaStore.lastOrder();
-  if (saved?.order_number && saved?.phone) {
-    $('lookup-number').value = saved.order_number;
-    $('lookup-phone').value = saved.phone;
+  const paymentReceived = new URLSearchParams(location.search).get('payment') === 'received';
+  if (paymentReceived) {
+    $('payment-thanks').hidden = false;
+    $('order-lookup').hidden = true;
+    $('order-results').hidden = true;
+    $('order-back').hidden = true;
+    return;
   }
+  if (saved?.phone) phoneField.value = saved.phone;
+
   function showError(message='') { $('lookup-error').textContent=message; $('lookup-error').hidden=!message; }
-  function paymentMessage(message) { $('order-payment').hidden=false; $('order-payment').innerHTML=`<p class="payment-prompt">${BakkaUI.escape(message)}</p>`; }
-  function renderSummary(data) {
-    const items=(data.items||[]).map(item=>`<li><span>${BakkaUI.escape(item.book_title)} × ${item.quantity}</span><strong>${BakkaUI.money(Number(item.unit_price)*Number(item.quantity))}</strong></li>`).join('');
-    $('order-summary').innerHTML=`<div class="order-summary-head"><strong>${BakkaUI.escape(data.order_number)}</strong><span>${BakkaUI.money(data.amount_due)} รวมจัดส่งแล้ว</span></div><ul>${items}</ul><div class="order-summary-totals"><span>ยอดชำระทั้งหมด (รวมจัดส่ง)</span><strong>${BakkaUI.money(data.amount_due)}</strong></div>`;
-    $('order-status-banner').innerHTML=`<span class="order-status-dot"></span><div><strong>${BakkaUI.escape(statusLabels[data.status]||'กำลังดำเนินการ')}</strong><small>${data.payment_method==='qr'?'ชำระด้วย QR':'ให้ร้านติดต่อกลับทาง LINE/Facebook'}</small></div>`;
-    $('order-result').hidden=false;
+  function paymentMarkup(order, qrUrl) {
+    if (order.payment_method!=='qr') return '<p class="payment-prompt">ร้านจะติดต่อกลับตามช่องทางที่ให้ไว้</p>';
+    if (order.status==='pending'||order.status==='contacted') return '<p class="payment-prompt">ร้านกำลังเตรียมคำสั่งซื้อ กรุณาตรวจสถานะอีกครั้งภายหลัง</p>';
+    if (order.status==='cancelled') return '<p class="payment-prompt">ออเดอร์นี้ถูกยกเลิกแล้ว หากต้องการสอบถามเพิ่มเติม กรุณาติดต่อร้าน</p>';
+    if (order.status==='confirmed'||order.status==='shipped') return `<p class="payment-prompt">${order.status==='shipped'?'ร้านยืนยันการชำระและจัดส่งแล้ว':'ร้านตรวจสอบและยืนยันการชำระแล้ว'}</p>`;
+    if (order.status==='slip_submitted') return '<p class="slip-received">ได้รับสลิปแล้ว แอดมินกำลังตรวจสอบรายการด้วยตนเอง</p>';
+    if (!qrUrl) return '<p class="payment-prompt">ยังโหลด QR ไม่ได้ กรุณารีเฟรชสถานะหรือติดต่อร้าน</p>';
+    return `<p>ราคานี้รวมค่าจัดส่งแล้ว กรุณาโอนยอดที่แสดงและแนบสลิป ร้านจะตรวจสอบด้วยตนเอง</p><div class="qr-payment-card"><img src="${BakkaUI.escape(qrUrl)}" alt="QR Code สำหรับชำระเงิน"><div><small>ยอดชำระทั้งหมด (รวมจัดส่ง)</small><strong>${BakkaUI.money(order.amount_due)}</strong></div></div><form class="slip-form" data-slip-form="${BakkaUI.escape(order.order_id)}"><label for="payment-slip-${BakkaUI.escape(order.order_id)}">แนบสลิป (JPG, PNG หรือ WEBP ไม่เกิน 5 MB)</label><input id="payment-slip-${BakkaUI.escape(order.order_id)}" type="file" accept="image/jpeg,image/png,image/webp" required><button type="submit" class="button primary" data-send-slip="${BakkaUI.escape(order.order_id)}">ส่งสลิปให้ร้าน</button><small>การแนบสลิปยังไม่ถือว่ายืนยันการชำระ ร้านจะตรวจรายการเอง</small></form>`;
   }
-  async function renderPayment(data) {
-    const panel=$('order-payment'); panel.hidden=false;
-    if (data.payment_method!=='qr') { paymentMessage(data.status==='cancelled'?'หากต้องการสอบถามเพิ่มเติม กรุณาติดต่อร้านโดยตรง':'ร้านจะติดต่อกลับทางเบอร์โทรศัพท์หรือช่องทางที่ให้ไว้ เพื่อยืนยันยอดและแจ้งวิธีชำระเงิน'); return; }
-    if (data.status==='pending'||data.status==='contacted') { paymentMessage('ร้านกำลังเตรียมคำสั่งซื้อนี้ หากยังไม่เห็น QR กรุณากดรีเฟรชสถานะอีกครั้ง'); return; }
-    if (data.status==='cancelled') { paymentMessage('ออเดอร์นี้ถูกยกเลิกแล้ว หากต้องการสั่งซื้อใหม่ กรุณากลับไปเลือกหนังสือ'); return; }
-    if (data.status==='confirmed'||data.status==='shipped') { paymentMessage(data.status==='shipped'?'ร้านได้รับชำระและจัดส่งแล้ว':'ร้านตรวจสอบและยืนยันการชำระแล้ว'); return; }
-    let qrUrl='';
-    try { qrUrl=(await BakkaStore.getPaymentSettings()).qr_image_url||''; } catch {}
-    if (!qrUrl) { paymentMessage('ร้านยืนยันยอดแล้ว แต่ยังไม่ได้ตั้งค่ารูป QR กรุณาติดต่อร้านเพื่อรับวิธีชำระ'); return; }
-    const proofState=data.status==='slip_submitted'?'<div class="slip-received">ได้รับรูปสลิปแล้ว กรุณารอร้านตรวจสอบด้วยตนเอง</div>':`<form id="slip-form" class="slip-form"><label for="payment-slip">แนบรูปสลิป (JPG, PNG หรือ WEBP ไม่เกิน 5 MB)</label><input id="payment-slip" type="file" accept="image/jpeg,image/png,image/webp" required><button type="submit" class="button primary" id="send-slip">ส่งสลิปให้ร้าน</button><small>การส่งสลิปยังไม่ถือว่ายืนยันการชำระ ร้านจะตรวจรายการด้วยตนเอง</small></form>`;
-    panel.innerHTML=`<h2>ชำระเงินด้วย QR</h2><p>ราคานี้รวมค่าจัดส่งแล้ว กรุณากรอกยอดตามที่แสดง ตรวจสอบชื่อบัญชีปลายทางก่อนโอน และส่งสลิปให้ร้านตรวจด้วยตนเอง</p><div class="qr-payment-card"><img src="${BakkaUI.escape(qrUrl)}" alt="QR Code สำหรับชำระเงิน"><div><small>ยอดชำระทั้งหมด (รวมจัดส่ง)</small><strong>${BakkaUI.money(data.amount_due)}</strong></div></div>${proofState}`;
-    const form=$('slip-form');
-    if (form) form.addEventListener('submit',async event=>{
-      event.preventDefault(); if (busy) return;
-      const file=$('payment-slip').files[0]; if (!file) return;
-      busy=true; $('send-slip').disabled=true; $('send-slip').textContent='กำลังส่งสลิป...'; showError();
-      try { await BakkaStore.uploadPaymentSlip({order_id:data.order_id,order_number:data.order_number,phone:$('lookup-phone').value.trim()},file); busy=false; await loadOrder(); }
-      catch(error) { showError(error.message); $('send-slip').disabled=false; $('send-slip').textContent='ส่งสลิปให้ร้าน'; }
-      finally { busy=false; }
-    });
+  function orderMarkup(order, qrUrl) {
+    const items=(order.items||[]).map(item=>`<li><span>${BakkaUI.escape(item.book_title)} × ${Number(item.quantity)}</span><strong>${BakkaUI.money(Number(item.unit_price)*Number(item.quantity))}</strong></li>`).join('');
+    return `<article class="order-result" data-order-number="${BakkaUI.escape(order.order_number)}"><div class="order-status-banner"><span class="order-status-dot"></span><div><strong>${BakkaUI.escape(statusLabels[order.status]||'กำลังดำเนินการ')}</strong><small>${BakkaUI.escape(order.order_number)} · ${new Date(order.created_at).toLocaleDateString('th-TH')}</small></div></div><div class="order-summary"><div class="order-summary-head"><strong>รายการหนังสือ</strong><span>${BakkaUI.money(order.amount_due)} รวมส่งแล้ว</span></div><ul>${items}</ul><div class="order-summary-totals"><span>ยอดชำระทั้งหมด (รวมจัดส่ง)</span><strong>${BakkaUI.money(order.amount_due)}</strong></div></div><section class="order-payment"><h2>${order.payment_method==='qr'?'ชำระเงินด้วย QR':'การชำระเงิน'}</h2>${paymentMarkup(order,qrUrl)}</section></article>`;
   }
-  async function loadOrder() {
+  async function loadOrders() {
     if (busy) return;
-    const number=$('lookup-number').value.trim(), phone=$('lookup-phone').value.trim();
-    if (!number || !phone) return showError('กรุณากรอกเลขออเดอร์และเบอร์โทรศัพท์');
-    busy=true; showError(); $('lookup-submit').disabled=true; $('lookup-submit').textContent='กำลังค้นหา...';
-    try { order=await BakkaStore.getCustomerOrder(number,phone); renderSummary(order); await renderPayment(order); }
-    catch(error) { $('order-result').hidden=true; showError(error.message); }
-    finally { busy=false; $('lookup-submit').disabled=false; $('lookup-submit').textContent='ค้นหาออเดอร์'; }
+    const phone=phoneField.value.trim();
+    if (!phone) return showError('กรุณากรอกเบอร์โทรศัพท์ที่ใช้สั่งซื้อ');
+    busy=true; showError(); $('lookup-submit').disabled=true; $('lookup-submit').textContent='กำลังค้นหา...'; $('refresh-orders').disabled=true;
+    try {
+      const orders=await BakkaStore.getCustomerOrdersByPhone(phone);
+      let qrUrl='';
+      if (orders.some(order=>order.payment_method==='qr'&&order.status==='awaiting_payment')) {
+        try { qrUrl=(await BakkaStore.getPaymentSettings()).qr_image_url||''; } catch {}
+      }
+      $('order-results-count').textContent=`พบ ${orders.length} รายการ`;
+      orderList.innerHTML=orders.map(order=>orderMarkup(order,qrUrl)).join('');
+      $('order-results').hidden=false;
+    } catch(error) { $('order-results').hidden=true; showError(error.message); }
+    finally { busy=false; $('lookup-submit').disabled=false; $('lookup-submit').textContent='ค้นหา'; $('refresh-orders').disabled=false; }
   }
-  $('order-lookup-form').addEventListener('submit',event=>{event.preventDefault();loadOrder();});
-  $('refresh-order').addEventListener('click',loadOrder);
-  if (saved?.order_number && saved?.phone) loadOrder();
+  $('order-lookup-form').addEventListener('submit',event=>{event.preventDefault();loadOrders();});
+  $('refresh-orders').addEventListener('click',loadOrders);
+  orderList.addEventListener('submit',async event=>{
+    const form=event.target.closest('[data-slip-form]');
+    if (!form||busy) return;
+    event.preventDefault();
+    const file=form.querySelector('input[type=file]').files[0];
+    if(!file) return;
+    const orderId=form.dataset.slipForm;
+    const button=form.querySelector('[data-send-slip]');
+    const orderCard=form.closest('.order-result');
+    const orderNumber=orderCard.dataset.orderNumber;
+    busy=true; button.disabled=true; button.textContent='กำลังส่งสลิป...'; showError();
+    try {
+      await BakkaStore.uploadPaymentSlip({order_id:orderId,order_number:orderNumber,phone:phoneField.value.trim()},file);
+      location.replace('order.html?payment=received');
+    } catch(error) { showError(error.message); $('lookup-error').scrollIntoView({block:'center',behavior:'smooth'}); button.disabled=false; button.textContent='ส่งสลิปให้ร้าน'; }
+    finally { busy=false; }
+  });
+  if (saved?.phone) loadOrders();
 })();
