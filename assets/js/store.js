@@ -207,6 +207,7 @@
       return order;
     },
     lastOrder() { return read(LAST_ORDER_KEY,null); },
+    rememberOrder(order) { if (order?.order_number && order?.phone) write(LAST_ORDER_KEY,order); },
     async getCustomerOrder(orderNumber, phone) {
       checkConfiguration();
       return request('/rest/v1/rpc/get_customer_order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({p_order_number:orderNumber,p_phone:phone})});

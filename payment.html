@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#244b42">
+  <title>ทำรายการสั่งซื้อ — Bakkabook</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script src="config.js" defer></script>
+  <script src="assets/js/data.js" defer></script>
+  <script src="assets/js/configuration.js" defer></script>
+  <script src="assets/js/store.js" defer></script>
+  <script src="assets/js/common.js" defer></script>
+  <script src="assets/js/payment.js?v=1" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">ข้ามไปเนื้อหา</a>
+  <div data-site-header="transaction"></div>
+  <main id="main" class="container order-main">
+    <nav class="breadcrumb" aria-label="เส้นทางหน้าเว็บ"><a href="index.html">หน้าแรก</a><span>/</span><a href="cart.html">ตะกร้าหนังสือ</a><span>/</span><span>ทำรายการสั่งซื้อ</span></nav>
+    <section id="payment-thanks" class="payment-thanks" hidden>
+      <span class="payment-thanks-mark" data-icon="check"></span>
+      <div class="eyebrow orange">PAYMENT RECEIVED</div>
+      <h1>ขอบคุณสำหรับการชำระเงิน</h1>
+      <p>ร้านได้รับสลิปแล้ว แอดมินกำลังตรวจสอบรายการด้วยตนเอง</p>
+      <a class="button primary" href="order.html">กลับไปติดตามคำสั่งซื้อ</a>
+    </section>
+    <section id="payment-panel" class="payment-panel" hidden>
+      <div class="payment-panel-heading"><div class="eyebrow orange">YOUR ORDER</div><h1>ทำรายการสั่งซื้อ</h1><p>ตรวจยอดและทำรายการชำระเงินสำหรับออเดอร์นี้</p></div>
+      <p id="payment-error" class="form-error" role="alert" hidden></p>
+      <div id="payment-content"></div>
+    </section>
+    <section id="payment-missing" class="payment-missing" hidden>
+      <h1>ไม่พบรายการที่กำลังทำ</h1><p>เปิดลิงก์จากตะกร้าหรือหน้าติดตามคำสั่งซื้ออีกครั้งได้เลย</p>
+      <a class="button secondary" href="order.html">ไปหน้าติดตามคำสั่งซื้อ</a>
+    </section>
+  </main>
+  <div data-site-footer></div>
+  <noscript>กรุณาเปิด JavaScript เพื่อทำรายการสั่งซื้อ</noscript>
+</body>
+</html>

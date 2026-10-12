@@ -8,7 +8,7 @@ const {spawnSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..');
 function fixture(t){
   const temp=fs.mkdtempSync(path.join(os.tmpdir(),'bakkabook-build-'));
-  for(const file of ['tools/build.mjs','assets/js/configuration.js','index.html','product.html','cart.html','order.html','admin.html']){const target=path.join(temp,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(root,file),target);}
+  for(const file of ['tools/build.mjs','assets/js/configuration.js','index.html','product.html','cart.html','payment.html','order.html','admin.html']){const target=path.join(temp,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(root,file),target);}
   fs.writeFileSync(path.join(temp,'config.js'),'window.BAKKA_CONFIG = {supabaseUrl:"",supabaseAnonKey:"",aiFunctionName:"book-assistant"};');
   t.after(()=>fs.rmSync(temp,{recursive:true,force:true}));
   return temp;
@@ -25,7 +25,7 @@ test('Vercel build injects public environment variables and packages only fronte
   const source=fs.readFileSync(path.join(temp,'dist/config.js'),'utf8');const context={window:{}};vm.runInNewContext(source,context);
   assert.equal(context.window.BAKKA_CONFIG.supabaseUrl,'https://example.supabase.co');assert.equal(context.window.BAKKA_CONFIG.supabaseAnonKey,'sb_publishable_test');
   assert(!source.includes('this-secret-must-never-be-published'));
-  assert.deepEqual(fs.readdirSync(path.join(temp,'dist')).sort(),['admin.html','assets','cart.html','config.js','index.html','order.html','product.html']);
+  assert.deepEqual(fs.readdirSync(path.join(temp,'dist')).sort(),['admin.html','assets','cart.html','config.js','index.html','order.html','payment.html','product.html']);
 });
 test('Vercel build refuses missing credentials and secret keys without publishing them',t=>{
   const temp=fixture(t);

@@ -42,12 +42,18 @@
     showError(); submit.disabled = true; submit.textContent = 'กำลังส่งคำสั่งซื้อ...';
     const form = Object.fromEntries(new FormData(event.currentTarget));
     try {
-      await BakkaStore.placeOrder({...form,payment_method:'qr'});
+      const order = await BakkaStore.placeOrder(form);
       try { BakkaStore.clearCart(); } catch {}
-      window.location.href = 'order.html';
+      window.location.href = 'payment.html?order=' + encodeURIComponent(order.order_number);
     } catch (error) {
       const message = /PGRST202|42883|create_book_order|Could not find the function/i.test(error.message) ? 'ระบบสั่งซื้อใน Supabase ยังติดตั้งไม่ครบ ให้ผู้ดูแลรันไฟล์ supabase/orders.sql ใน SQL Editor แล้วลองใหม่' : error.message;
       showError(message); submit.disabled = false; submit.innerHTML = 'ส่งคำขอสั่งซื้อ <span data-icon="arrow"></span>';
     }
   });
+  const lineInput = document.getElementById('customer-line');
+  document.querySelectorAll('[name="payment_method"]').forEach(input => input.addEventListener('change', () => {
+    const needsContact = document.querySelector('[name="payment_method"]:checked')?.value === 'contact';
+    lineInput.required = needsContact;
+    document.getElementById('contact-required-mark').hidden = !needsContact;
+  }));
 })();

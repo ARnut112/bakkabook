@@ -21,7 +21,7 @@ alter table public.orders add column if not exists payment_method text not null 
 alter table public.orders add column if not exists shipping_fee numeric(10,2) not null default 0;
 alter table public.orders add column if not exists slip_path text;
 alter table public.orders drop constraint if exists orders_status_check;
-alter table public.orders add constraint orders_status_check check (status in ('pending','contacted','awaiting_payment','slip_submitted','confirmed','shipped','cancelled'));
+alter table public.orders add constraint orders_status_check check (status in ('pending','contacted','awaiting_payment','slip_submitted','confirmed','shipped','completed','cancelled'));
 alter table public.orders drop constraint if exists orders_payment_method_check;
 alter table public.orders add constraint orders_payment_method_check check (payment_method in ('contact','qr'));
 alter table public.orders drop constraint if exists orders_shipping_fee_check;
@@ -192,12 +192,17 @@ declare
   v_order_number text;
   v_order_id uuid;
 begin
-  if p_payment_method is distinct from 'qr' then raise exception 'คำสั่งซื้อใหม่นี้ชำระผ่าน QR เท่านั้น'; end if;
-  if not exists(select 1 from public.shop_payment_settings where id and qr_image_url<>'') then
+  if p_payment_method is null or p_payment_method not in ('qr','contact') then raise exception 'กรุณาเลือกวิธีชำระเงิน'; end if;
+  if p_payment_method='contact' and char_length(trim(coalesce(p_line_id,'')))=0 then raise exception 'กรุณากรอก LINE ID หรือชื่อ Facebook เพื่อให้ร้านติดต่อกลับ'; end if;
+  if p_payment_method='qr' and not exists(select 1 from public.shop_payment_settings where id and qr_image_url<>'') then
     raise exception 'ร้านยังไม่ได้ตั้งค่า QR รับเงิน กรุณาติดต่อร้านก่อนทำรายการ';
   end if;
   v_order_number := public.create_book_order(p_customer_name,p_phone,p_line_id,p_address,p_note,p_items);
-  update public.orders set payment_method='qr',status='awaiting_payment',shipping_fee=0 where order_number=v_order_number returning id into v_order_id;
+  if p_payment_method='qr' then
+    update public.orders set payment_method='qr',status='awaiting_payment',shipping_fee=0 where order_number=v_order_number returning id into v_order_id;
+  else
+    update public.orders set payment_method='contact',status='pending',shipping_fee=0 where order_number=v_order_number returning id into v_order_id;
+  end if;
   return jsonb_build_object('order_number',v_order_number,'order_id',v_order_id);
 end;
 $$;
@@ -290,11 +295,13 @@ declare
   v_item record;
 begin
   if not (select public.is_book_admin()) then raise exception 'เฉพาะเจ้าของร้านเท่านั้น'; end if;
-  if p_status not in ('pending','contacted','awaiting_payment','slip_submitted','confirmed','shipped','cancelled') then raise exception 'สถานะคำสั่งซื้อไม่ถูกต้อง'; end if;
+  if p_status not in ('pending','contacted','awaiting_payment','slip_submitted','confirmed','shipped','completed','cancelled') then raise exception 'สถานะคำสั่งซื้อไม่ถูกต้อง'; end if;
   if p_shipping_fee is null or p_shipping_fee < 0 or p_shipping_fee > 100000 then raise exception 'กรุณากรอกค่าส่งตั้งแต่ 0 ถึง 100,000 บาท'; end if;
   select * into v_order from public.orders where id=p_order_id for update;
   if not found then raise exception 'ไม่พบคำสั่งซื้อ'; end if;
   if v_order.status='cancelled' and p_status<>'cancelled' then raise exception 'คำสั่งซื้อที่ยกเลิกแล้วไม่สามารถเปิดใหม่ได้'; end if;
+  if v_order.status='completed' and p_status<>'completed' then raise exception 'คำสั่งซื้อที่ปิดแล้วไม่สามารถแก้ไขสถานะได้'; end if;
+  if p_status='completed' and v_order.status not in ('confirmed','shipped') then raise exception 'กรุณายืนยันการชำระหรือจัดส่งก่อนปิดคำสั่งซื้อ'; end if;
   if p_status in ('awaiting_payment','slip_submitted') and v_order.payment_method<>'qr' then raise exception 'คำสั่งซื้อนี้ไม่ได้เลือกชำระด้วย QR'; end if;
   if p_status='awaiting_payment' and not exists(select 1 from public.shop_payment_settings where id and qr_image_url<>'') then raise exception 'กรุณาเพิ่ม QR รับเงินในหลังร้านก่อน'; end if;
   if v_order.status<>'cancelled' and p_status='cancelled' then
@@ -316,10 +323,12 @@ declare
   v_item record;
 begin
   if not (select public.is_book_admin()) then raise exception 'เฉพาะเจ้าของร้านเท่านั้น'; end if;
-  if p_status not in ('pending','contacted','confirmed','shipped','cancelled') then raise exception 'สถานะคำสั่งซื้อไม่ถูกต้อง'; end if;
+  if p_status not in ('pending','contacted','confirmed','shipped','completed','cancelled') then raise exception 'สถานะคำสั่งซื้อไม่ถูกต้อง'; end if;
   select status into v_status from public.orders where id = p_order_id for update;
   if not found then raise exception 'ไม่พบคำสั่งซื้อ'; end if;
   if v_status = 'cancelled' and p_status <> 'cancelled' then raise exception 'คำสั่งซื้อที่ยกเลิกแล้วไม่สามารถเปิดใหม่ได้'; end if;
+  if v_status = 'completed' and p_status <> 'completed' then raise exception 'คำสั่งซื้อที่ปิดแล้วไม่สามารถแก้ไขสถานะได้'; end if;
+  if p_status = 'completed' and v_status not in ('confirmed','shipped') then raise exception 'กรุณายืนยันการชำระหรือจัดส่งก่อนปิดคำสั่งซื้อ'; end if;
   if v_status <> 'cancelled' and p_status = 'cancelled' then
     for v_item in select book_id, quantity from public.order_items where order_id = p_order_id and book_id is not null order by book_id loop
       update public.books set stock = stock + v_item.quantity where id = v_item.book_id;

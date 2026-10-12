@@ -28,7 +28,7 @@ if (process.env.VERCEL && config.mode === 'demo') throw new Error('Missing Supab
 if (path.dirname(output) !== root || path.basename(output) !== 'dist') throw new Error('Unexpected build directory');
 await fs.rm(output, { recursive:true, force:true });
 await fs.mkdir(output, { recursive:true });
-for (const file of ['index.html','product.html','cart.html','order.html','admin.html']) await fs.copyFile(path.join(root,file),path.join(output,file));
+for (const file of ['index.html','product.html','cart.html','payment.html','order.html','admin.html']) await fs.copyFile(path.join(root,file),path.join(output,file));
 await fs.cp(path.join(root,'assets'),path.join(output,'assets'),{recursive:true});
 const publicConfig = { supabaseUrl:config.supabaseUrl, supabaseAnonKey:config.supabaseAnonKey, aiFunctionName:config.aiFunctionName };
 await fs.writeFile(path.join(output,'config.js'),'// Generated public configuration. No secret keys.\nwindow.BAKKA_CONFIG = '+JSON.stringify(publicConfig,null,2)+';\n');

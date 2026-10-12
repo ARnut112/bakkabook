@@ -61,6 +61,16 @@ test('checkout creates a QR order and stores its resume details',async()=>{
   assert.deepEqual(JSON.parse(call.options.body),{p_customer_name:'น้องนัท',p_phone:'0812345678',p_line_id:'nattan_book',p_address:'กรุงเทพมหานคร',p_note:'โทรก่อนส่ง',p_payment_method:'qr',p_items:[{book_id:'book-id',quantity:2}]});
   assert.deepEqual(JSON.parse(JSON.stringify(store.lastOrder())),{order_number:'BK-261012-ABC123',order_id:'order-uuid',phone:'0812345678',payment_method:'qr'});
 });
+test('checkout can request LINE/Facebook contact instead of QR',async()=>{
+  let call;
+  const {store}=app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async(url,options)=>{call={url,options};return response({order_number:'BK-261012-CONTACT',order_id:'contact-order'});});
+  store.addToCart('book-id');
+  await store.placeOrder({name:'น้องนัท',phone:'0812345678',line_id:'@nattan',address:'กรุงเทพมหานคร',payment_method:'contact'});
+  assert.equal(JSON.parse(call.options.body).p_payment_method,'contact');
+  assert.equal(store.lastOrder().payment_method,'contact');
+  store.rememberOrder({order_number:'BK-OLD',order_id:'old-id',phone:'0812345678',payment_method:'qr'});
+  assert.equal(store.lastOrder().order_number,'BK-OLD');
+});
 test('customer can resume an order with its number and phone without exposing table reads',async()=>{
   let call;
   const {store}=app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async(url,options)=>{call={url,options};return response({order_number:'BK-123',status:'awaiting_payment'});});

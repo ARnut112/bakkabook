@@ -39,8 +39,12 @@ const output = path.join(root,'test-results'); fs.mkdirSync(output,{recursive:tr
     await page.goto(base+'index.html'); await page.locator('[data-cart="book-01"]').click(); assert.equal(await page.locator('#cart-count').textContent(),'1');
     assert.equal(await page.locator('.main-nav a[href="order.html"]').count(),1,'tracking should be reachable from the store navigation');
     await page.goto(base+'cart.html'); await page.waitForSelector('#cart-content:not([hidden])');
-    assert((await page.locator('.checkout-steps').textContent()).includes('แสดง QR'));
-    assert.equal(await page.locator('[name="payment_method"]').count(),0);
+    assert((await page.locator('.checkout-steps').textContent()).includes('QR'));
+    assert.equal(await page.locator('[name="payment_method"]').count(),2);
+    await page.locator('[name="payment_method"][value="contact"]').check();
+    assert(await page.locator('#customer-line').evaluate(el=>el.required));
+    await page.locator('[name="payment_method"][value="qr"]').check();
+    assert(!(await page.locator('#customer-line').evaluate(el=>el.required)));
     assert.equal(await page.locator('.cart-item').count(),1); await page.locator('[data-quantity="book-01"]').fill('2');
     assert.equal(await page.locator('#cart-count').textContent(),'2'); assert.equal(await page.locator('#cart-total').textContent(),'฿570');
     await page.locator('[data-remove-cart="book-01"]').click(); assert(await page.locator('#cart-empty').isVisible()); assert(!await page.locator('#place-order').isEnabled());
@@ -87,14 +91,14 @@ const output = path.join(root,'test-results'); fs.mkdirSync(output,{recursive:tr
     await page.waitForFunction(()=>document.getElementById('stat-total').textContent==='12');
     for (const width of [390,768,1280]) {
       await page.setViewportSize({width,height:900});
-      await page.goto(base+'order.html?payment=received');
+      await page.goto(base+'payment.html?payment=received');
       assert(await page.locator('#payment-thanks').isVisible());
-      assert(await page.locator('#order-lookup').isHidden());
-      assert(await page.locator('#order-results').isHidden());
+      assert(await page.locator('#payment-panel').isHidden());
+      assert.equal(await page.locator('#payment-content .order-summary').count(),0);
       assert.equal(await page.locator('#payment-thanks a[href="order.html"]').count(),1);
-      for (const [name,url,ready] of [['home','index.html','.book-card'],['product','product.html?id=book-01','.product-info'],['cart','cart.html','#cart-content:not([hidden])'],['order','order.html','.order-lookup'],['admin','admin.html','#dashboard:not([hidden])']]) {
+      for (const [name,url,ready] of [['home','index.html','.book-card'],['product','product.html?id=book-01','.product-info'],['cart','cart.html','#cart-content:not([hidden])'],['order','order.html','.order-lookup'],['payment','payment.html','#payment-missing'],['admin','admin.html','#dashboard:not([hidden])']]) {
         await page.goto(base+url); await page.waitForSelector(ready);
-        if(name==='order'){assert.equal(await page.locator('#lookup-number').count(),0);assert.equal(await page.locator('#lookup-phone').count(),1);assert.equal(await page.locator('#refresh-orders').count(),1);}
+        if(name==='order'){assert.equal(await page.locator('#lookup-number').count(),0);assert.equal(await page.locator('#lookup-phone').count(),1);assert.equal(await page.locator('#refresh-orders').count(),1);assert.equal(await page.locator('#order-list .order-payment').count(),0);}
         const overflow = await page.evaluate(()=>document.documentElement.scrollWidth>window.innerWidth);
         assert(!overflow, name+' overflows at '+width);
         if(width===390) await page.screenshot({path:path.join(output,name+'-mobile.png'),fullPage:true});
