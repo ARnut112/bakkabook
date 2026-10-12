@@ -25,11 +25,12 @@
 #lookup-error{grid-column:1/-1;margin:0;font-size:11px}.order-results{max-width:900px;margin:0 auto}.order-results-head{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:0 0 8px}.order-results-head p{font-size:10px;color:var(--muted)}.order-refresh{width:34px;height:34px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--green);font-size:24px;line-height:1}.order-refresh:hover{background:#eef1e8}.order-refresh:disabled{opacity:.55}.order-results>#order-list{display:grid;gap:14px}.order-result{max-width:none;margin:0;padding:16px;background:#fff;border:1px solid var(--line);border-radius:10px}.order-result .order-summary{margin:10px 0 0}.order-result .order-payment{margin-top:10px;padding:14px}.order-result .order-payment h2{font-size:15px}.order-result .qr-payment-card{grid-template-columns:minmax(125px,190px) 1fr;align-items:center;justify-items:center}.order-result .qr-payment-card img{width:100%;max-width:190px}.order-result .qr-payment-card>div{padding:12px}.order-result .slip-form{grid-template-columns:1fr auto;align-items:end}.order-result .slip-form label,.order-result .slip-form input,.order-result .slip-form small{grid-column:1/-1}.order-result .slip-form .button{grid-column:1/-1;justify-self:start}.payment-thanks{max-width:640px;margin:34px auto;padding:38px 24px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:11px}.payment-thanks-mark{display:grid;place-items:center;width:45px;height:45px;margin:0 auto 12px;border-radius:50%;background:#e8eee1;color:#617f57}.payment-thanks-mark svg{width:22px}.payment-thanks h1{font-size:24px;margin:5px 0}.payment-thanks p{font-size:12px;color:var(--muted);margin:0 0 20px}.reserved-stock{color:#a96a45}.product-actions .button:disabled{cursor:not-allowed}
 @media(max-width:650px){.order-lookup{grid-template-columns:1fr;gap:10px;padding:13px 15px}.order-lookup-copy h1{font-size:20px}.order-lookup-form{grid-template-columns:minmax(0,1fr) auto;gap:8px}.order-lookup-form .button{min-height:38px;padding-inline:14px}.order-results{width:100%}.order-result{padding:12px}.order-result .order-summary{padding:10px}.order-result .order-payment{padding:12px}.order-result .qr-payment-card{grid-template-columns:1fr}.order-result .qr-payment-card img{width:min(220px,100%)}.order-result .slip-form{grid-template-columns:1fr}.order-result .slip-form .button{grid-column:auto}.payment-thanks{margin:18px auto;padding:28px 18px}.payment-thanks h1{font-size:21px}}
 
-/* Separate one-order payment from phone-based order tracking. */
-.order-lookup{grid-template-columns:minmax(260px,.7fr) minmax(0,1.3fr);column-gap:22px}
-.order-lookup-copy .eyebrow{font-size:22px;letter-spacing:0;margin-bottom:3px}
-.order-lookup-copy h1{font-size:22px;margin:0 0 4px}
-.order-lookup-copy>p{font-size:11px;line-height:1.6}
+/* Center the phone-only order lookup like the earlier tracking layout. */
+.order-lookup{max-width:680px;margin:25px auto 26px;padding:27px;display:block}
+.order-lookup-copy .eyebrow{font-size:10px;letter-spacing:2px;margin-bottom:3px}
+.order-lookup-copy h1{font-size:26px;margin:4px 0}
+.order-lookup-copy>p{font-size:11px;line-height:1.7;margin:0 0 17px}
+.order-lookup-form{grid-template-columns:minmax(0,1fr) auto;gap:12px;margin:0}
 .order-result .order-payment{display:none}
 .order-resume{margin-top:12px;min-height:36px;padding:8px 13px;font-size:11px}
 .payment-panel{max-width:860px;margin:14px auto 55px;padding:24px;background:#fff;border:1px solid var(--line);border-radius:11px}
@@ -38,6 +39,6 @@
 .contact-order-note{padding:17px;border-radius:8px;background:#f1f4eb}.contact-order-note h2{font-size:16px;margin-bottom:5px}.contact-order-note p{font-size:11px;line-height:1.8;color:var(--muted)}
 .transaction-track-link{display:inline-flex;align-items:center;gap:6px;margin-top:16px;font-size:11px}.transaction-track-link .icon{width:15px;height:15px}
 .payment-missing{max-width:600px;margin:30px auto;padding:32px;text-align:center;background:#fff;border:1px solid var(--line);border-radius:10px}.payment-missing h1{font-size:21px;margin-bottom:7px}.payment-missing p{font-size:11px;color:var(--muted);margin-bottom:16px}
-.payment-thanks-mark svg{transform:translate(2px,1px);stroke-width:2}
+.payment-thanks-mark svg{stroke-width:2}
 .refresh-glyph{font-size:18px;line-height:1;margin-right:2px}
-@media(max-width:650px){.order-lookup{grid-template-columns:1fr;column-gap:0}.order-lookup-copy .eyebrow{font-size:20px}.payment-panel{padding:16px;margin:10px auto 35px}.payment-panel-heading h1{font-size:22px}.payment-order-card{padding:12px}.payment-missing{padding:25px 17px}}
+@media(max-width:650px){.order-lookup{padding:19px;margin-top:12px}.order-lookup-copy .eyebrow{font-size:9px}.order-lookup-copy h1{font-size:22px}.order-lookup-copy>p{font-size:10px;margin-bottom:13px}.order-lookup-form{grid-template-columns:minmax(0,1fr) auto;gap:8px}.payment-panel{padding:16px;margin:10px auto 35px}.payment-panel-heading h1{font-size:22px}.payment-order-card{padding:12px}.payment-missing{padding:25px 17px}}
