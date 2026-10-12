@@ -25,10 +25,24 @@ async function gemini(body: Record<string, unknown>) {
   });
   if (!response.ok) {
     if (response.status === 429) throw new Error('โควตา Gemini เต็มหรือมีคำขอมากเกินไป ลองใหม่ภายหลัง');
-    if ([400,403,404].includes(response.status)) throw new Error('ตรวจสอบ API key, GEMINI_MODEL และสิทธิ์ใช้ Google Search ในโปรเจกต์ Gemini');
+    if (response.status === 402) throw new Error('บัญชี Gemini ต้องเติมเครดิตหรือเปิดการเรียกเก็บเงินก่อนใช้งาน');
+    if (response.status === 400) throw new Error('Gemini ปฏิเสธคำขอ ตรวจ API key, GEMINI_MODEL และรูปภาพที่ส่ง');
+    if (response.status === 403) throw new Error('Gemini ไม่อนุญาต API key นี้ ตรวจสิทธิ์ Generative Language API และข้อจำกัดของคีย์');
+    if (response.status === 404) throw new Error('ไม่พบโมเดล Gemini ที่ตั้งไว้ ตรวจค่า GEMINI_MODEL');
     throw new Error('Gemini ไม่พร้อมให้บริการ ลองอีกครั้งภายหลัง');
   }
   return response.json();
+}
+function supabaseApiKey() {
+  // Older Supabase projects expose the legacy anon key. New projects expose
+  // named publishable keys instead, so support both function environments.
+  const legacy = Deno.env.get('SUPABASE_ANON_KEY');
+  if (legacy) return legacy;
+  try {
+    const keys = JSON.parse(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS') || '{}');
+    if (typeof keys.default === 'string' && keys.default) return keys.default;
+    return Object.values(keys).find((key): key is string => typeof key === 'string' && !!key) || '';
+  } catch { return ''; }
 }
 async function limitedBody(request: Request) {
   const reader = request.body?.getReader();
@@ -55,8 +69,9 @@ Deno.serve(async (request: Request) => {
   try {
     const authorization = request.headers.get('authorization') || '';
     if (!authorization.startsWith('Bearer ')) return reply({ error:'กรุณาเข้าสู่ระบบ' },401);
-    const url = Deno.env.get('SUPABASE_URL')!;
-    const apikey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const url = Deno.env.get('SUPABASE_URL');
+    const apikey = supabaseApiKey();
+    if (!url || !apikey) return reply({ error:'Edge Function ยังอ่านค่า Supabase URL หรือ Publishable key ไม่ได้ กรุณาตรวจ Environment Variables ของฟังก์ชัน' },500);
     const authHeaders = { apikey, Authorization:authorization };
     const userResponse = await fetch(url + '/auth/v1/user', { headers:authHeaders, signal:AbortSignal.timeout(10000) });
     if (!userResponse.ok) return reply({ error:'เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง' },401);

@@ -5,9 +5,9 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const source = stripTypeScriptTypes(fs.readFileSync(path.join(__dirname,'../supabase/functions/book-assistant/index.ts'),'utf8'));
-function setup({admin=true,validUser=true,grounded=true}={}) {
+function setup({admin=true,validUser=true,grounded=true,legacyKey=true,geminiKey=true}={}) {
   let handler; const calls = [];
-  const env = { SUPABASE_URL:'https://test.supabase.co', SUPABASE_ANON_KEY:'test-anon', GEMINI_API_KEY:'test-secret' };
+  const env = { SUPABASE_URL:'https://test.supabase.co', ...(legacyKey?{SUPABASE_ANON_KEY:'test-anon'}:{SUPABASE_PUBLISHABLE_KEYS:JSON.stringify({default:'sb_publishable_test'})}), ...(geminiKey?{GEMINI_API_KEY:'test-secret'}:{}) };
   const candidate = (value,metadata) => new Response(JSON.stringify({candidates:[{finishReason:'STOP',content:{parts:[{text:typeof value==='string'?value:JSON.stringify(value)}]},groundingMetadata:metadata}]}));
   const context = vm.createContext({ Deno:{env:{get:key=>env[key]},serve:fn=>handler=fn},Response,Request,AbortSignal,TextDecoder,Uint8Array,URL,
     fetch:async (url,options)=>{
@@ -39,6 +39,19 @@ test('AI endpoint reads image, searches sources, structures results, and does no
   assert.equal(result.sources[0].url,'https://publisher.example/book');
   assert.equal(calls.filter(call=>call.url.includes('googleapis')).length,3);
   assert(!JSON.stringify(result).includes('test-secret'));
+});
+test('AI uses Supabase named publishable keys when legacy anon key is unavailable',async()=>{
+  const {handler,calls,request}=setup({legacyKey:false}); const response=await handler(request());
+  assert.equal(response.status,200);
+  const supabaseCalls=calls.filter(call=>call.url.includes('/auth/v1/user')||call.url.includes('/admin_users'));
+  assert.equal(supabaseCalls.length,2);
+  assert(supabaseCalls.every(call=>call.options.headers.apikey==='sb_publishable_test'));
+});
+test('AI reports a missing Gemini secret clearly without sending an API request',async()=>{
+  const {handler,calls,request}=setup({geminiKey:false}); const response=await handler(request()); const result=await response.json();
+  assert.equal(response.status,502);
+  assert.match(result.error,/GEMINI_API_KEY/);
+  assert.equal(calls.filter(call=>call.url.includes('googleapis')).length,0);
 });
 test('AI endpoint leaves description empty if search has no grounded sources',async()=>{
   const {handler,calls,request}=setup({grounded:false}); const response=await handler(request()); const result=await response.json();

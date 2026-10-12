@@ -65,9 +65,9 @@ window.BAKKA_CONFIG = {
 | --- | --- |
 | `GEMINI_API_KEY` | API key ที่ได้จาก Google AI Studio |
 | `GEMINI_MODEL` | `gemini-2.5-flash` หรือโมเดลที่รองรับ image, structured output และ Google Search ในบัญชีของคุณ |
-| `ALLOWED_ORIGINS` | เช่น `http://localhost,http://shopna.test,http://127.0.0.1:8085` คั่นด้วยจุลภาค ไม่มี path หรือ slash ท้าย |
+| `ALLOWED_ORIGINS` | เช่น `http://localhost,http://shopna.test,http://127.0.0.1:8085,https://bakkabook.vercel.app` คั่นด้วยจุลภาค ไม่มี path หรือ slash ท้าย |
 
-`SUPABASE_URL` และ `SUPABASE_ANON_KEY` เป็นตัวแปรมาตรฐานของ Edge Functions ไม่ต้องใส่คีย์ผู้ดูแลระดับ service_role เพิ่ม
+ฟังก์ชันอ่าน `SUPABASE_ANON_KEY` ของโปรเจกต์รุ่นเดิม หรือคีย์เริ่มต้นจาก `SUPABASE_PUBLISHABLE_KEYS` ของโปรเจกต์รุ่นใหม่โดยอัตโนมัติ ไม่ต้องเพิ่ม service_role key หรือ Gemini key ในหน้าเว็บ
 
 3. Deploy ฟังก์ชันจาก `supabase/functions/book-assistant/index.ts` ชื่อ `book-assistant` ผ่าน Supabase Dashboard หรือ CLI
 
@@ -75,11 +75,12 @@ window.BAKKA_CONFIG = {
 
 ```powershell
 supabase login
-supabase link --project-ref YOUR_PROJECT_REF
-supabase functions deploy book-assistant --no-verify-jwt
+supabase functions deploy book-assistant --project-ref iajfydwozedjdcxroeyv --no-verify-jwt
 ```
 
-ใช้ `--no-verify-jwt` ตาม `supabase/config.toml` เพราะฟังก์ชันตรวจ Bearer token กับ Supabase Auth เองทุกครั้ง และตรวจสิทธิ์ `admin_users` ก่อนเรียก Gemini รองรับ signing keys รุ่นใหม่ หาก deploy ผ่าน Dashboard ให้ปิด legacy JWT verification ของฟังก์ชันนี้เท่านั้น อย่าลบการตรวจสิทธิ์ในโค้ด
+ใช้ `--no-verify-jwt` ตาม `supabase/config.toml` เพราะฟังก์ชันตรวจ Bearer token กับ Supabase Auth เองทุกครั้ง และตรวจสิทธิ์ `admin_users` ก่อนเรียก Gemini รองรับ signing keys และ publishable keys รุ่นใหม่ หาก deploy ผ่าน Dashboard ให้ปิด legacy JWT verification ของฟังก์ชันนี้เท่านั้น อย่าลบการตรวจสิทธิ์ในโค้ด
+
+หลังแก้ `supabase/functions/book-assistant/index.ts` ต้อง deploy ฟังก์ชันใหม่ด้วยคำสั่งด้านบน ส่วนการเพิ่มหรือแก้ Secret ใน Dashboard มีผลกับฟังก์ชันที่ deploy แล้วได้ทันที
 
 4. เปิดเว็บผ่าน origin ที่อนุญาต เข้าหลังร้าน → เพิ่มหนังสือ → เลือก/ถ่ายรูป → อ่านปกด้วย Gemini
 5. ตรวจชื่อ ผู้เขียน เรื่องย่อ และแหล่งอ้างอิง กดนำข้อมูลมาใส่ในฟอร์ม จากนั้นกรอกราคา สต็อก จำนวนหน้า และบันทึกเอง
@@ -102,8 +103,9 @@ supabase functions deploy book-assistant --no-verify-jwt
 - เข้าหลังร้านไม่ได้: ตรวจ UUID ใน `admin_users`, รหัสผ่าน และยืนยันว่าได้รัน schema แล้ว
 - โหลดข้อมูลไม่สำเร็จ: ตรวจ URL/key และสิทธิ์ API ใน Supabase ดู Network ในเครื่องมือพัฒนาเบราว์เซอร์
 - อัปโหลดรูปไม่ได้: ตรวจ bucket `book-images` และ policies ใน schema
-- AI ถูกบล็อก origin: เพิ่ม origin จริง (scheme + host + port) ลง `ALLOWED_ORIGINS` แล้ว deploy ใหม่
-- AI ตอบ 401: ออกจากระบบแล้วเข้าใหม่ ตรวจการตั้งค่า verify_jwt ของฟังก์ชัน
+- AI ตอบ 401 หรือแจ้งเซสชันหมดอายุทั้งที่ล็อกอินอยู่: deploy ฟังก์ชันเวอร์ชันล่าสุดเพื่อให้ใช้ Publishable key รุ่นใหม่ได้ แล้วลองออกจากระบบและเข้าใหม่
+- AI ถูกบล็อก origin: ถ้ามี `ALLOWED_ORIGINS` ใน Secrets ค่านั้นจะแทนรายการเริ่มต้นทั้งหมด ให้ใส่ origin ที่ใช้จริงทุกตัว เช่น `https://bakkabook.vercel.app` และ `http://localhost` โดยไม่มี path หรือ slash ท้าย
+- Gemini แจ้ง API key หรือโมเดล: ตรวจ Secret ชื่อ `GEMINI_API_KEY` ว่าบันทึกในโปรเจกต์เดียวกับฟังก์ชัน และตรวจชื่อ `GEMINI_MODEL` กับสิทธิ์/โควตา Gemini
 - โมเดลไม่พร้อมใช้: เปลี่ยน `GEMINI_MODEL` เป็นโมเดลที่บัญชีมีสิทธิ์และรองรับทั้งสามความสามารถ
 - บันทึกโหมดตัวอย่างไม่สำเร็จ: localStorage มีพื้นที่จำกัด ลองลดรูป/ลบรายการทดลองที่ไม่ใช้ ข้อมูลเดิมจะไม่ถูกเขียนทับหากบันทึกไม่สำเร็จ
 
