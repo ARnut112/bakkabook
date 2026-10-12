@@ -9,7 +9,7 @@
   if (BakkaStore.mode === 'live') {
     $('mode-badge').textContent = 'SUPABASE'; $('mode-badge').classList.add('live');
     $('demo-note').textContent = 'เชื่อมต่อ Supabase · การเปลี่ยนแปลงจะบันทึกลงฐานข้อมูลของร้าน';
-    $('ai-help').textContent = 'เลือกภาพปกแล้วกดอ่านปก รูปจะส่งให้ Gemini ช่วยระบุหนังสือและค้นเรื่องย่อ คุณตรวจทานก่อนนำไปใช้ได้';
+    $('ai-help').textContent = 'เลือกภาพปกแล้วกดอ่านปก Gemini จะช่วยอ่านชื่อและผู้เขียน เติมหมวดหมู่กับเรื่องย่อเองได้ หากเปิดค้นเว็บใน Paid tier ระบบจะแสดงแหล่งอ้างอิงให้ตรวจทาน';
     $('demo-ai').hidden = true;
   } else if (BakkaStore.mode === 'invalid') {
     $('mode-badge').textContent = 'ตั้งค่าไม่ครบ';

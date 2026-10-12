@@ -5,9 +5,9 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 const source = stripTypeScriptTypes(fs.readFileSync(path.join(__dirname,'../supabase/functions/book-assistant/index.ts'),'utf8'));
-function setup({admin=true,validUser=true,grounded=true,legacyKey=true,geminiKey=true}={}) {
+function setup({admin=true,validUser=true,grounded=true,legacyKey=true,geminiKey=true,searchEnabled=false}={}) {
   let handler; const calls = [];
-  const env = { SUPABASE_URL:'https://test.supabase.co', ...(legacyKey?{SUPABASE_ANON_KEY:'test-anon'}:{SUPABASE_PUBLISHABLE_KEYS:JSON.stringify({default:'sb_publishable_test'})}), ...(geminiKey?{GEMINI_API_KEY:'test-secret'}:{}) };
+  const env = { SUPABASE_URL:'https://test.supabase.co', ...(legacyKey?{SUPABASE_ANON_KEY:'test-anon'}:{SUPABASE_PUBLISHABLE_KEYS:JSON.stringify({default:'sb_publishable_test'})}), ...(geminiKey?{GEMINI_API_KEY:'test-secret'}:{}), ...(searchEnabled?{GEMINI_ENABLE_SEARCH:'true'}:{}) };
   const candidate = (value,metadata) => new Response(JSON.stringify({candidates:[{finishReason:'STOP',content:{parts:[{text:typeof value==='string'?value:JSON.stringify(value)}]},groundingMetadata:metadata}]}));
   const context = vm.createContext({ Deno:{env:{get:key=>env[key]},serve:fn=>handler=fn},Response,Request,AbortSignal,TextDecoder,Uint8Array,URL,
     fetch:async (url,options)=>{
@@ -33,12 +33,20 @@ test('AI endpoint rejects missing login, invalid token, non-admin, and unknown o
   }
 });
 test('AI endpoint reads image, searches sources, structures results, and does not expose API key',async()=>{
-  const {handler,calls,request}=setup(); const response=await handler(request());
+  const {handler,calls,request}=setup({searchEnabled:true}); const response=await handler(request());
   assert.equal(response.status,200); const result=await response.json();
   assert.equal(result.title,'หนังสือทดสอบ'); assert.equal(result.category,'วรรณกรรม');
   assert.equal(result.sources[0].url,'https://publisher.example/book');
   assert.equal(calls.filter(call=>call.url.includes('googleapis')).length,3);
   assert(!JSON.stringify(result).includes('test-secret'));
+});
+test('AI free-tier default reads the cover without calling Google Search',async()=>{
+  const {handler,calls,request}=setup(); const response=await handler(request()); const result=await response.json();
+  assert.equal(response.status,200);
+  assert.equal(result.title,'หนังสือทดสอบ'); assert.equal(result.author,'ผู้เขียนทดสอบ');
+  assert.equal(result.description,''); assert.deepEqual(result.sources,[]);
+  assert.match(result.note,/เติมหมวดหมู่และเรื่องย่อเอง/);
+  assert.equal(calls.filter(call=>call.url.includes('googleapis')).length,1);
 });
 test('AI uses Supabase named publishable keys when legacy anon key is unavailable',async()=>{
   const {handler,calls,request}=setup({legacyKey:false}); const response=await handler(request());
@@ -54,7 +62,7 @@ test('AI reports a missing Gemini secret clearly without sending an API request'
   assert.equal(calls.filter(call=>call.url.includes('googleapis')).length,0);
 });
 test('AI endpoint leaves description empty if search has no grounded sources',async()=>{
-  const {handler,calls,request}=setup({grounded:false}); const response=await handler(request()); const result=await response.json();
+  const {handler,calls,request}=setup({grounded:false,searchEnabled:true}); const response=await handler(request()); const result=await response.json();
   assert.equal(result.description,''); assert.deepEqual(result.sources,[]);
   assert.equal(calls.filter(call=>call.url.includes('googleapis')).length,2);
 });
