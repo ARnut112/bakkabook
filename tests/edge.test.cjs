@@ -4,63 +4,146 @@ const { stripTypeScriptTypes } = require('node:module');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
-const source = stripTypeScriptTypes(fs.readFileSync(path.join(__dirname,'../supabase/functions/book-assistant/index.ts'),'utf8'));
-function setup({admin=true,validUser=true,legacyKey=true,geminiKey=true}={}) {
-  let handler; const calls = [];
-  const env = { SUPABASE_URL:'https://test.supabase.co', ...(legacyKey?{SUPABASE_ANON_KEY:'test-anon'}:{SUPABASE_PUBLISHABLE_KEYS:JSON.stringify({default:'sb_publishable_test'})}), ...(geminiKey?{GEMINI_API_KEY:'test-secret'}:{}) };
-  const candidate = value => new Response(JSON.stringify({candidates:[{finishReason:'STOP',content:{parts:[{text:JSON.stringify(value)}]}}]}));
-  const context = vm.createContext({ Deno:{env:{get:key=>env[key]},serve:fn=>handler=fn},Response,Request,AbortSignal,TextDecoder,Uint8Array,URL,
-    fetch:async (url,options)=>{
-      calls.push({url,options});
-      if(url.endsWith('/auth/v1/user')) return new Response(JSON.stringify({id:'user-id'}),{status:validUser?200:401});
-      if(url.includes('/admin_users')) return new Response(JSON.stringify(admin?[{user_id:'user-id'}]:[]));
+const source = stripTypeScriptTypes(
+  fs.readFileSync(path.join(__dirname, '../supabase/functions/book-assistant/index.ts'), 'utf8'),
+);
+function setup({
+  admin = true,
+  validUser = true,
+  legacyKey = true,
+  geminiKey = true,
+  geminiStatus = 200,
+} = {}) {
+  let handler;
+  const calls = [];
+  const env = {
+    SUPABASE_URL: 'https://test.supabase.co',
+    ...(legacyKey
+      ? { SUPABASE_ANON_KEY: 'test-anon' }
+      : { SUPABASE_PUBLISHABLE_KEYS: JSON.stringify({ default: 'sb_publishable_test' }) }),
+    ...(geminiKey ? { GEMINI_API_KEY: 'test-secret' } : {}),
+  };
+  const candidate = (value) =>
+    new Response(
+      JSON.stringify({
+        candidates: [
+          { finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(value) }] } },
+        ],
+      }),
+    );
+  const context = vm.createContext({
+    Deno: { env: { get: (key) => env[key] }, serve: (fn) => (handler = fn) },
+    Response,
+    Request,
+    AbortSignal,
+    TextDecoder,
+    Uint8Array,
+    URL,
+    fetch: async (url, options) => {
+      calls.push({ url, options });
+      if (url.endsWith('/auth/v1/user'))
+        return new Response(JSON.stringify({ id: 'user-id' }), { status: validUser ? 200 : 401 });
+      if (url.includes('/admin_users'))
+        return new Response(JSON.stringify(admin ? [{ user_id: 'user-id' }] : []));
       const body = JSON.parse(options.body);
-      if(body.contents[0].parts.some(part=>part.inlineData)) return candidate({title:'หนังสือทดสอบ',author:'ผู้เขียนทดสอบ',note:'ตรวจทานชื่อก่อนใช้'});
+      if (url.includes('googleapis')) {
+        if (geminiStatus !== 200)
+          return new Response(
+            JSON.stringify({ error: { status: 'TEST_ERROR', message: 'provider diagnostic' } }),
+            { status: geminiStatus },
+          );
+        if (body.contents[0].parts.some((part) => part.inlineData))
+          return candidate({
+            title: 'หนังสือทดสอบ',
+            author: 'ผู้เขียนทดสอบ',
+            note: 'ตรวจทานชื่อก่อนใช้',
+          });
+      }
       throw new Error('The cover reader should make only one Gemini request');
-    }
+    },
   });
-  vm.runInContext(source,context);
-  const request = (auth=true,origin='http://localhost')=> new Request('https://test.supabase.co/functions/v1/book-assistant',{method:'POST',headers:{origin,'Content-Type':'application/json',...(auth?{Authorization:'Bearer test-token'}:{})},body:JSON.stringify({image:'data:image/jpeg;base64,/9j/2Q=='})});
-  return {handler,calls,request};
+  vm.runInContext(source, context);
+  const request = (auth = true, origin = 'http://localhost') =>
+    new Request('https://test.supabase.co/functions/v1/book-assistant', {
+      method: 'POST',
+      headers: {
+        origin,
+        'Content-Type': 'application/json',
+        ...(auth ? { Authorization: 'Bearer test-token' } : {}),
+      },
+      body: JSON.stringify({ image: 'data:image/jpeg;base64,/9j/2Q==' }),
+    });
+  return { handler, calls, request };
 }
-test('AI endpoint rejects missing login, invalid token, non-admin, and unknown origin before Gemini',async()=>{
-  for(const options of [{auth:false},{validUser:false},{admin:false},{origin:'https://untrusted.example'}]) {
-    const {handler,calls,request}=setup(options);
-    const response=await handler(request(options.auth??true,options.origin));
-    assert([401,403].includes(response.status));
-    assert(!calls.some(call=>call.url.includes('googleapis')));
+test('AI endpoint rejects missing login, invalid token, non-admin, and unknown origin before Gemini', async () => {
+  for (const options of [
+    { auth: false },
+    { validUser: false },
+    { admin: false },
+    { origin: 'https://untrusted.example' },
+  ]) {
+    const { handler, calls, request } = setup(options);
+    const response = await handler(request(options.auth ?? true, options.origin));
+    assert([401, 403].includes(response.status));
+    assert(!calls.some((call) => call.url.includes('googleapis')));
   }
 });
-test('AI endpoint reads only title and author from the cover, with one Gemini request',async()=>{
-  const {handler,calls,request}=setup(); const response=await handler(request());
-  assert.equal(response.status,200); const result=await response.json();
-  assert.deepEqual(Object.keys(result).sort(),['author','note','title']);
-  assert.equal(result.title,'หนังสือทดสอบ'); assert.equal(result.author,'ผู้เขียนทดสอบ');
-  assert.equal(calls.filter(call=>call.url.includes('googleapis')).length,1);
+test('AI endpoint reads only title and author from the cover, with one Gemini request', async () => {
+  const { handler, calls, request } = setup();
+  const response = await handler(request());
+  assert.equal(response.status, 200);
+  const result = await response.json();
+  assert.deepEqual(Object.keys(result).sort(), ['author', 'note', 'title']);
+  assert.equal(result.title, 'หนังสือทดสอบ');
+  assert.equal(result.author, 'ผู้เขียนทดสอบ');
+  assert.equal(calls.filter((call) => call.url.includes('googleapis')).length, 1);
   assert(!JSON.stringify(result).includes('test-secret'));
 });
-test('AI result has no generated synopsis or category',async()=>{
-  const {handler,calls,request}=setup(); const response=await handler(request()); const result=await response.json();
-  assert.equal(response.status,200);
-  assert.equal(result.title,'หนังสือทดสอบ'); assert.equal(result.author,'ผู้เขียนทดสอบ');
-  assert.equal('description' in result,false); assert.equal('category' in result,false);
-  assert.equal(calls.filter(call=>call.url.includes('googleapis')).length,1);
+test('AI result has no generated synopsis or category', async () => {
+  const { handler, calls, request } = setup();
+  const response = await handler(request());
+  const result = await response.json();
+  assert.equal(response.status, 200);
+  assert.equal(result.title, 'หนังสือทดสอบ');
+  assert.equal(result.author, 'ผู้เขียนทดสอบ');
+  assert.equal('description' in result, false);
+  assert.equal('category' in result, false);
+  assert.equal(calls.filter((call) => call.url.includes('googleapis')).length, 1);
 });
-test('AI uses Supabase named publishable keys when legacy anon key is unavailable',async()=>{
-  const {handler,calls,request}=setup({legacyKey:false}); const response=await handler(request());
-  assert.equal(response.status,200);
-  const supabaseCalls=calls.filter(call=>call.url.includes('/auth/v1/user')||call.url.includes('/admin_users'));
-  assert.equal(supabaseCalls.length,2);
-  assert(supabaseCalls.every(call=>call.options.headers.apikey==='sb_publishable_test'));
+test('AI uses Supabase named publishable keys when legacy anon key is unavailable', async () => {
+  const { handler, calls, request } = setup({ legacyKey: false });
+  const response = await handler(request());
+  assert.equal(response.status, 200);
+  const supabaseCalls = calls.filter(
+    (call) => call.url.includes('/auth/v1/user') || call.url.includes('/admin_users'),
+  );
+  assert.equal(supabaseCalls.length, 2);
+  assert(supabaseCalls.every((call) => call.options.headers.apikey === 'sb_publishable_test'));
 });
-test('AI reports a missing Gemini secret clearly without sending an API request',async()=>{
-  const {handler,calls,request}=setup({geminiKey:false}); const response=await handler(request()); const result=await response.json();
-  assert.equal(response.status,502);
-  assert.match(result.error,/ยังไม่พร้อมใช้งาน/);
-  assert.equal(calls.filter(call=>call.url.includes('googleapis')).length,0);
+test('AI reports a missing Gemini secret clearly without sending an API request', async () => {
+  const { handler, calls, request } = setup({ geminiKey: false });
+  const response = await handler(request());
+  const result = await response.json();
+  assert.equal(response.status, 502);
+  assert.match(result.error, /ยังไม่พร้อมใช้งาน/);
+  assert.equal(calls.filter((call) => call.url.includes('googleapis')).length, 0);
 });
-test('AI accepts the production Vercel origin and still rejects anonymous requests',async()=>{
-  const {handler,request}=setup();
-  const response=await handler(request(false,'https://bakkabook.vercel.app'));
-  assert.equal(response.status,401);assert.equal(response.headers.get('access-control-allow-origin'),'https://bakkabook.vercel.app');
+test('AI distinguishes rejected keys from temporary Gemini outages without exposing provider details', async () => {
+  for (const [status, expected] of [
+    [401, /HTTP 401/],
+    [503, /HTTP 503/],
+  ]) {
+    const { handler, request } = setup({ geminiStatus: status });
+    const response = await handler(request());
+    const result = await response.json();
+    assert.equal(response.status, 502);
+    assert.match(result.error, expected);
+    assert(!JSON.stringify(result).includes('provider diagnostic'));
+  }
+});
+test('AI accepts the production Vercel origin and still rejects anonymous requests', async () => {
+  const { handler, request } = setup();
+  const response = await handler(request(false, 'https://bakkabook.vercel.app'));
+  assert.equal(response.status, 401);
+  assert.equal(response.headers.get('access-control-allow-origin'), 'https://bakkabook.vercel.app');
 });

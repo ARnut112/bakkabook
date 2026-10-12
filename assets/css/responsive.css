@@ -1,0 +1,1005 @@
+/* Original shared breakpoints and reduced-motion rules. */
+@keyframes book-in {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (min-width: 1450px) {
+  .hero {
+    min-height: 580px;
+  }
+  .hero-art {
+    height: 460px;
+  }
+  .book-left {
+    top: 115px;
+  }
+  .book-right {
+    top: 104px;
+  }
+  .book-center {
+    top: 70px;
+  }
+}
+@media (max-width: 1150px) {
+  .container {
+    width: calc(100% - 64px);
+  }
+  .main-nav {
+    gap: 22px;
+  }
+  .hero h1 {
+    font-size: 39px;
+  }
+  .hero-art {
+    height: 385px;
+  }
+  .hero-book {
+    width: 35%;
+  }
+  .book-center {
+    width: 39%;
+    left: 31%;
+    top: 75px;
+  }
+  .book-left {
+    top: 117px;
+  }
+  .book-right {
+    top: 106px;
+  }
+  .art-seal {
+    width: 83px;
+    height: 83px;
+    font-size: 12px;
+    right: -2%;
+    top: 13%;
+  }
+  .book-cover-area {
+    height: 250px;
+  }
+  .book-cover-area > a {
+    padding: 40px 30px 25px;
+  }
+  .book-cover-area img {
+    max-height: 187px;
+  }
+  .category-chip {
+    padding-inline: 13px;
+    font-size: 10px;
+  }
+  .product-layout {
+    gap: 38px;
+  }
+  .product-info h1 {
+    font-size: 29px;
+  }
+  .admin-shell {
+    grid-template-columns: 195px minmax(0, 1fr);
+  }
+  .admin-sidebar {
+    padding: 32px 17px;
+  }
+  .admin-sidebar .brand {
+    font-size: 22px;
+  }
+  .admin-main {
+    padding-inline: 27px;
+  }
+  .editor-layout {
+    grid-template-columns: 1fr 0.85fr;
+    gap: 17px;
+  }
+  .editor-card {
+    padding: 19px;
+  }
+  .stat-card {
+    padding: 18px 15px;
+    gap: 12px;
+  }
+  .stat-icon {
+    width: 33px;
+    height: 33px;
+  }
+  .table-controls .search-box {
+    width: 200px;
+  }
+}
+@media (max-width: 900px) {
+  .main-nav {
+    gap: 17px;
+    font-size: 11px;
+  }
+  .brand {
+    font-size: 26px;
+  }
+  .header-actions {
+    gap: 10px;
+  }
+  .admin-link {
+    padding-left: 13px;
+  }
+  .hero {
+    gap: 0;
+    min-height: 490px;
+    padding-block: 32px;
+  }
+  .hero h1 {
+    font-size: 33px;
+    letter-spacing: -1px;
+  }
+  .hero-copy > p {
+    font-size: 12px;
+  }
+  .hero-eyebrow {
+    font-size: 7px;
+    letter-spacing: 1.4px;
+  }
+  .hero-art {
+    height: 345px;
+    margin-left: 0;
+  }
+  .art-circle {
+    inset: 35px 0 28px;
+  }
+  .book-shelf {
+    bottom: 45px;
+  }
+  .book-center {
+    top: 80px;
+  }
+  .book-left {
+    top: 118px;
+  }
+  .book-right {
+    top: 108px;
+  }
+  .art-seal {
+    top: 18%;
+    width: 65px;
+    height: 65px;
+    font-size: 10px;
+  }
+  .art-caption {
+    font-size: 6px;
+    top: 20px;
+    letter-spacing: 1.7px;
+  }
+  .art-bottom-caption {
+    font-size: 6px;
+    bottom: 14px;
+    letter-spacing: 1.4px;
+  }
+  .star-one {
+    font-size: 35px;
+    top: 45px;
+  }
+  .hero-footnote {
+    font-size: 9px;
+  }
+  .hero-button {
+    font-size: 12px;
+  }
+  .values-strip .container > span {
+    font-size: 10px;
+    gap: 8px;
+  }
+  .section-note {
+    font-size: 13px;
+  }
+  .book-grid {
+    gap: 27px 19px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .book-cover-area {
+    height: 265px;
+  }
+  .book-cover-area img {
+    max-height: 197px;
+  }
+  .category-row {
+    align-items: flex-start;
+  }
+  .category-chips {
+    gap: 7px;
+  }
+  .story-copy {
+    padding: 32px;
+  }
+  .story-copy h2 {
+    font-size: 25px;
+  }
+  .story-copy p {
+    font-size: 12px;
+  }
+  .footer-top .brand {
+    font-size: 23px;
+  }
+  .footer-top {
+    gap: 22px;
+  }
+  .footer-top p {
+    font-size: 10px;
+  }
+  .product-layout {
+    gap: 28px;
+    grid-template-columns: 0.9fr 1fr;
+  }
+  .product-image-stage {
+    min-height: 430px;
+    padding: 25px 20px;
+  }
+  .product-image-stage > img {
+    height: 280px;
+  }
+  .product-info h1 {
+    font-size: 26px;
+  }
+  .product-actions {
+    flex-direction: column;
+    gap: 9px;
+  }
+  .book-details dl {
+    grid-template-columns: 1fr;
+  }
+  .admin-shell {
+    grid-template-columns: 170px minmax(0, 1fr);
+  }
+  .admin-sidebar {
+    padding: 30px 12px;
+  }
+  .admin-sidebar .brand {
+    font-size: 19px;
+    gap: 7px;
+  }
+  .admin-sidebar .brand-mark {
+    width: 29px;
+    height: 29px;
+    font-size: 27px;
+  }
+  .admin-sidebar .brand small {
+    font-size: 5px;
+    letter-spacing: 1.3px;
+  }
+  .sidebar-nav a,
+  .sidebar-nav button {
+    font-size: 11px;
+    padding: 12px 10px;
+  }
+  .admin-main {
+    padding-inline: 22px;
+  }
+  .admin-stats {
+    gap: 10px;
+  }
+  .stat-card {
+    display: block;
+    padding: 15px;
+  }
+  .stat-icon {
+    margin-bottom: 8px;
+    width: 30px;
+    height: 30px;
+  }
+  .stat-card strong {
+    font-size: 24px;
+  }
+  .table-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .table-controls {
+    width: 100%;
+  }
+  .table-controls .search-box {
+    max-width: none;
+    width: auto;
+  }
+  .admin-help {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .admin-help .text-link {
+    margin-left: 39px;
+  }
+  .editor-layout {
+    grid-template-columns: 1fr;
+  }
+  .editor-aside {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .editor-card {
+    margin-bottom: 17px;
+  }
+  .editor-aside .editor-card:first-child {
+    grid-column: 1/-1;
+  }
+}
+@media (max-width: 650px) {
+  .container {
+    width: calc(100% - 36px);
+  }
+  .announcement {
+    font-size: 7px;
+    padding: 8px 10px;
+    letter-spacing: 1.2px;
+  }
+  .announcement span {
+    font-size: 8px;
+    margin-left: 10px;
+  }
+  .header-inner {
+    min-height: 83px;
+    flex-wrap: wrap;
+    gap: 0;
+    padding-block: 16px 0;
+  }
+  .brand {
+    font-size: 25px;
+  }
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    font-size: 32px;
+  }
+  .brand small {
+    font-size: 6px;
+    margin-top: 7px;
+    letter-spacing: 1.6px;
+  }
+  .main-nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    gap: 37px;
+    margin-top: 10px;
+    font-size: 11px;
+    padding-bottom: 6px;
+  }
+  .main-nav a {
+    padding: 9px 0;
+  }
+  .header-actions {
+    gap: 12px;
+  }
+  .admin-link {
+    font-size: 10px;
+    padding-left: 12px;
+  }
+  .admin-link .icon {
+    width: 15px;
+  }
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 33px 0 30px;
+    gap: 19px;
+    text-align: center;
+    min-height: auto;
+  }
+  .hero-eyebrow {
+    justify-content: center;
+    font-size: 8px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: 38px;
+    line-height: 1.55;
+    letter-spacing: -1.5px;
+    margin-bottom: 14px;
+  }
+  .hero-copy > p {
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  .hero-button {
+    margin-top: 21px;
+  }
+  .hero-footnote {
+    justify-content: center;
+    margin-top: 15px;
+    font-size: 10px;
+  }
+  .hero-art {
+    height: 350px;
+    max-width: 390px;
+    width: 100%;
+    margin: auto;
+  }
+  .art-circle {
+    inset: 17px 20px 20px;
+  }
+  .art-caption {
+    top: 0;
+    font-size: 6px;
+  }
+  .book-center {
+    top: 43px;
+    left: 32%;
+    width: 36%;
+  }
+  .book-left {
+    top: 91px;
+    left: 8%;
+    width: 33%;
+  }
+  .book-right {
+    top: 79px;
+    right: 5%;
+    width: 33%;
+  }
+  .book-shelf {
+    bottom: 25px;
+    left: 5%;
+    right: 2%;
+  }
+  .art-bottom-caption {
+    bottom: 0;
+    font-size: 6px;
+  }
+  .art-seal {
+    top: 8%;
+    right: 1%;
+    width: 78px;
+    height: 78px;
+    font-size: 11px;
+  }
+  .star-one {
+    top: 21px;
+    left: 8%;
+  }
+  .star-two {
+    bottom: 42px;
+    right: 2%;
+    font-size: 25px;
+  }
+  .values-strip .container {
+    gap: 10px;
+    justify-content: space-between;
+    padding-block: 14px;
+  }
+  .values-strip .container > span {
+    flex-direction: column;
+    text-align: center;
+    gap: 6px;
+    font-size: 8px;
+    line-height: 1.6;
+    flex: 1;
+  }
+  .values-strip svg {
+    width: 16px;
+    height: 16px;
+  }
+  .section-space {
+    padding-block: 39px;
+  }
+  .section-heading {
+    margin-bottom: 20px;
+    align-items: flex-end;
+  }
+  .section-heading h2 {
+    font-size: 25px;
+  }
+  .section-heading p {
+    font-size: 11px;
+    margin-top: 7px;
+  }
+  .section-heading .eyebrow {
+    font-size: 8px;
+    letter-spacing: 1.5px;
+  }
+  .section-note {
+    display: none;
+  }
+  .collection-toolbar {
+    margin-top: 23px;
+    gap: 10px;
+  }
+  .search-box {
+    padding-inline: 10px;
+  }
+  .search-box input {
+    font-size: 10px;
+    padding-block: 11px;
+  }
+  .search-box .icon {
+    width: 15px;
+  }
+  .sort-field {
+    gap: 0;
+  }
+  .sort-field label {
+    display: none;
+  }
+  .sort-field select {
+    padding: 10px 5px;
+    font-size: 10px;
+    max-width: 127px;
+  }
+  .category-row {
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+    margin-bottom: 21px;
+  }
+  .category-chips {
+    gap: 7px;
+    flex-wrap: nowrap;
+    overflow: auto;
+    width: 100%;
+    padding-bottom: 4px;
+  }
+  .category-chip {
+    padding: 7px 13px;
+    font-size: 10px;
+  }
+  .result-count {
+    font-size: 10px;
+  }
+  .book-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px 14px;
+  }
+  .book-cover-area {
+    height: 225px;
+    border-radius: 7px;
+  }
+  .book-cover-area > a {
+    padding: 37px 22px 24px;
+  }
+  .book-cover-area img {
+    max-height: 166px;
+  }
+  .book-label {
+    top: 12px;
+    left: 8px;
+    font-size: 6px;
+    letter-spacing: 0.5px;
+    padding: 3px 5px;
+  }
+  .save-book {
+    width: 27px;
+    height: 27px;
+    top: 8px;
+    right: 7px;
+  }
+  .save-book svg {
+    width: 13px;
+    height: 13px;
+  }
+  .book-card-info {
+    padding-top: 12px;
+  }
+  .book-card h3 {
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  .book-card-info > p {
+    font-size: 10px;
+  }
+  .book-category {
+    font-size: 8px;
+  }
+  .book-card-bottom {
+    gap: 7px;
+    margin-top: 11px;
+  }
+  .book-card-bottom strong {
+    font-size: 15px;
+  }
+  .availability {
+    font-size: 8px;
+  }
+  .card-arrow {
+    width: 24px;
+    height: 24px;
+  }
+  .load-more-wrap {
+    margin-top: 25px;
+  }
+  .load-more-wrap .button {
+    min-height: 42px;
+    font-size: 11px;
+  }
+  .story-section {
+    grid-template-columns: 1fr;
+    margin-top: 0;
+    margin-bottom: 15px;
+    border-radius: 9px;
+  }
+  .story-art {
+    min-height: 245px;
+  }
+  .reading-sun {
+    width: 155px;
+    height: 155px;
+    top: 22px;
+  }
+  .drawn-book {
+    width: 107px;
+    height: 143px;
+    top: 61px;
+    left: calc(50% - 41px);
+  }
+  .drawn-book span {
+    font-size: 57px;
+  }
+  .story-star {
+    font-size: 50px;
+    left: 25%;
+    top: 71px;
+  }
+  .story-art-caption {
+    font-size: 7px;
+    bottom: 17px;
+  }
+  .story-copy {
+    padding: 27px;
+  }
+  .story-copy h2 {
+    font-size: 25px;
+  }
+  .story-copy .eyebrow {
+    font-size: 7px;
+    letter-spacing: 1.5px;
+  }
+  .story-copy p {
+    font-size: 12px;
+  }
+  .closing-note {
+    padding-block: 37px 48px;
+  }
+  .closing-note p {
+    font-size: 19px;
+  }
+  .closing-note small {
+    font-size: 7px;
+  }
+  .footer-top {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 24px;
+    padding-bottom: 26px;
+  }
+  .footer-top .brand {
+    font-size: 24px;
+    flex-basis: 100%;
+  }
+  .footer-top p {
+    flex: 1;
+    font-size: 10px;
+  }
+  .footer-top > a:last-child {
+    font-size: 10px;
+    gap: 8px;
+  }
+  .footer-bottom {
+    flex-direction: column;
+    gap: 5px;
+    font-size: 8px;
+  }
+  .site-footer {
+    padding-top: 31px;
+  }
+  .product-main .breadcrumb {
+    padding: 20px 0;
+    font-size: 9px;
+    gap: 8px;
+  }
+  .product-layout {
+    grid-template-columns: 1fr;
+    gap: 31px;
+    padding-top: 0;
+  }
+  .product-image-stage {
+    min-height: 420px;
+  }
+  .product-image-stage > img {
+    height: 290px;
+  }
+  .gallery-thumbnails {
+    margin-top: 13px;
+  }
+  .thumbnail {
+    height: 65px;
+    min-width: 50px;
+  }
+  .thumbnail img {
+    height: 48px;
+    width: 32px;
+  }
+  .product-info h1 {
+    font-size: 28px;
+  }
+  .product-subtitle {
+    font-size: 17px;
+  }
+  .product-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .product-actions .button {
+    font-size: 11px;
+  }
+  .book-details dl {
+    grid-template-columns: 1fr 1fr;
+    font-size: 10px;
+  }
+  .product-main .section-heading h2 {
+    font-size: 19px;
+  }
+  .product-main .section-heading .text-link {
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .product-main .section-space {
+    margin-top: 15px;
+  }
+  .admin-shell {
+    display: block;
+  }
+  .admin-sidebar {
+    position: relative;
+    top: auto;
+    height: auto;
+    padding: 17px 18px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+  }
+  .admin-sidebar .brand {
+    font-size: 24px;
+  }
+  .admin-sidebar .brand-mark {
+    width: 32px;
+    height: 32px;
+    font-size: 29px;
+  }
+  .admin-sidebar .brand small {
+    font-size: 6px;
+  }
+  .sidebar-label,
+  .sidebar-bottom {
+    display: none;
+  }
+  .sidebar-nav {
+    flex-direction: row;
+    gap: 7px;
+  }
+  .sidebar-nav a,
+  .sidebar-nav button {
+    padding: 7px;
+    font-size: 0;
+    gap: 0;
+    min-width: 34px;
+    min-height: 34px;
+    justify-content: center;
+  }
+  .sidebar-nav svg {
+    width: 17px;
+    height: 17px;
+  }
+  .admin-main {
+    padding: 0 18px 30px;
+  }
+  .admin-topbar {
+    height: 61px;
+    margin-bottom: 24px;
+  }
+  .admin-topbar > span {
+    font-size: 10px;
+  }
+  .admin-identity {
+    font-size: 9px;
+    gap: 8px;
+  }
+  .admin-identity > span:not(.avatar):not(.mode-badge) {
+    display: none;
+  }
+  .admin-heading {
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .admin-heading h1 {
+    font-size: 24px;
+  }
+  .admin-heading p {
+    font-size: 10px;
+  }
+  .admin-heading .eyebrow {
+    font-size: 7px;
+  }
+  .admin-heading .button {
+    padding: 10px 12px;
+    gap: 7px;
+    font-size: 11px;
+    white-space: nowrap;
+    min-height: 41px;
+  }
+  .admin-heading .button svg {
+    width: 15px;
+  }
+  .admin-stats {
+    gap: 9px;
+    margin-bottom: 19px;
+  }
+  .stat-card {
+    padding: 13px 11px;
+    border-radius: 8px;
+  }
+  .stat-card strong {
+    font-size: 22px;
+  }
+  .stat-card p {
+    font-size: 9px;
+  }
+  .stat-card small {
+    font-size: 8px;
+  }
+  .stat-icon {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 9px;
+  }
+  .stat-icon svg {
+    width: 16px;
+  }
+  .table-toolbar {
+    padding: 16px;
+    gap: 13px;
+  }
+  .table-toolbar h2 {
+    font-size: 13px;
+  }
+  .table-controls {
+    gap: 8px;
+  }
+  .table-controls select {
+    font-size: 10px;
+    max-width: 118px;
+  }
+  .book-table th,
+  .book-table td {
+    padding-inline: 13px;
+  }
+  .table-book {
+    min-width: 195px;
+  }
+  .table-book strong {
+    font-size: 11px;
+    max-width: 175px;
+  }
+  .table-category {
+    font-size: 9px;
+  }
+  .admin-help {
+    padding: 17px;
+    gap: 12px;
+  }
+  .admin-help p {
+    font-size: 10px;
+  }
+  .admin-help .text-link {
+    margin-left: 37px;
+  }
+  .admin-footnote {
+    font-size: 9px;
+  }
+  .editor-heading h1 {
+    font-size: 23px;
+  }
+  .editor-heading .text-link {
+    font-size: 11px;
+  }
+  .editor-card {
+    padding: 19px;
+  }
+  .editor-card h2 {
+    font-size: 14px;
+  }
+  .editor-aside {
+    display: block;
+  }
+  .field-row {
+    gap: 12px;
+  }
+  .field label {
+    font-size: 11px;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    font-size: 12px;
+    padding: 10px;
+  }
+  .editor-footer .button {
+    font-size: 12px;
+  }
+  .setup-dialog {
+    padding: 23px;
+  }
+  .setup-dialog ol {
+    font-size: 12px;
+  }
+  .login-panel {
+    margin-top: 35px;
+    padding: 25px;
+  }
+  .active-filter {
+    font-size: 10px;
+    padding: 10px;
+  }
+  .active-filter .text-link {
+    font-size: 10px;
+  }
+}
+@media (max-width: 370px) {
+  .hero h1 {
+    font-size: 32px;
+  }
+  .hero-art {
+    height: 310px;
+  }
+  .book-cover-area {
+    height: 192px;
+  }
+  .book-cover-area > a {
+    padding: 35px 18px 20px;
+  }
+  .book-cover-area img {
+    max-height: 137px;
+  }
+  .availability {
+    display: none;
+  }
+  .book-grid {
+    gap: 24px 10px;
+  }
+  .announcement span {
+    display: none;
+  }
+  .main-nav {
+    gap: 29px;
+  }
+  .brand {
+    font-size: 23px;
+  }
+  .header-actions {
+    gap: 5px;
+  }
+  .book-details dl {
+    grid-template-columns: 1fr;
+  }
+  .admin-heading h1 {
+    font-size: 21px;
+  }
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+  .stat-card {
+    padding: 11px 9px;
+  }
+  .stat-card p {
+    font-size: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *:before,
+  *:after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+test-results/
+.codex-remote-attachments/
+supabase/.temp/
+package-lock.json
+assets/covers/

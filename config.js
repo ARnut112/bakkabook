@@ -2,5 +2,5 @@
 window.BAKKA_CONFIG = {
   supabaseUrl: 'https://iajfydwozedjdcxroeyv.supabase.co',
   supabaseAnonKey: 'sb_publishable_to08_Lu4k863x5gV2aNxmw__plWC2bE',
-  aiFunctionName: 'book-assistant'
+  aiFunctionName: 'book-assistant',
 };

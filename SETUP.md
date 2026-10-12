@@ -1,6 +1,6 @@
 # เชื่อม Bakkabook กับ Supabase และ Gemini
 
-ขณะนี้ร้านอยู่ในโหมดตัวอย่าง ยังไม่ต้องมีบัญชีหรือ API key ข้อมูลที่แก้ไขอยู่ใน localStorage ของเบราว์เซอร์ รูปปกและหนังสือทั้งหมดเป็นข้อมูลสมมติที่ออกแบบสำหรับโปรเจกต์นี้
+หากยังไม่ได้ตั้งค่า Supabase ใน `config.js` ร้านจะใช้โหมดตัวอย่าง โดยเก็บข้อมูลที่แก้ไขไว้ใน localStorage ของเบราว์เซอร์ รูปปกและหนังสือตัวอย่างเป็นข้อมูลสมมติที่ออกแบบสำหรับโปรเจกต์นี้
 
 ## 1. เปิดเว็บในเครื่อง
 
@@ -12,7 +12,9 @@
 node server.mjs
 ```
 
-จากนั้นเปิด `http://127.0.0.1:8085` (หยุดเซิร์ฟเวอร์ด้วย Ctrl+C) ไม่มีแพ็กเกจที่ต้องติดตั้งก่อนรัน
+จากนั้นเปิด `http://127.0.0.1:8085` (หยุดเซิร์ฟเวอร์ด้วย Ctrl+C) การเปิด source ผ่าน Laragon หรือเซิร์ฟเวอร์นี้ไม่มีแพ็กเกจที่ต้องติดตั้งก่อนรัน
+
+หากจะจัดรูปแบบโค้ด สร้างไฟล์สำหรับ Vercel หรือรันชุดทดสอบ ให้ใช้ Node.js 22.13 ขึ้นไป (แนะนำ Node.js 24) และติดตั้งเครื่องมือก่อนด้วย `npm ci` หาก PowerShell บล็อก `npm.ps1` ให้ใช้ `npm.cmd` แทน เช่น `npm.cmd ci`
 
 เปิด `index.html` โดยตรงได้สำหรับทดลอง แต่ควรใช้เว็บเซิร์ฟเวอร์เพื่อให้ทุกหน้าใช้ localStorage ร่วมกันอย่างสม่ำเสมอ และใช้โหมดเชื่อมบริการจริง
 
@@ -36,7 +38,7 @@ values ('UUID-ของผู้ใช้จาก-Authentication');
 window.BAKKA_CONFIG = {
   supabaseUrl: 'https://YOUR_PROJECT.supabase.co',
   supabaseAnonKey: 'YOUR_PUBLISHABLE_OR_ANON_KEY',
-  aiFunctionName: 'book-assistant'
+  aiFunctionName: 'book-assistant',
 };
 ```
 
@@ -75,10 +77,10 @@ window.BAKKA_CONFIG = {
 1. สร้าง API key ของโปรเจกต์ Gemini ใน https://aistudio.google.com/apikey และตรวจว่าโมเดลรองรับรูปภาพ
 2. ใน Supabase ไปที่ Edge Functions → Secrets เพิ่ม:
 
-| Secret | ค่า |
-| --- | --- |
-| `GEMINI_API_KEY` | API key ที่ได้จาก Google AI Studio |
-| `GEMINI_MODEL` | `gemini-3.8-flash` หรือโมเดลที่รองรับภาพในบัญชีของคุณ |
+| Secret            | ค่า                                                                                                                                     |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `GEMINI_API_KEY`  | API key ที่ได้จาก Google AI Studio                                                                                                      |
+| `GEMINI_MODEL`    | `gemini-3.8-flash` หรือโมเดลที่รองรับภาพในบัญชีของคุณ                                                                                   |
 | `ALLOWED_ORIGINS` | เช่น `http://localhost,http://shopna.test,http://127.0.0.1:8085,https://bakkabook.vercel.app` คั่นด้วยจุลภาค ไม่มี path หรือ slash ท้าย |
 
 ฟังก์ชันอ่าน `SUPABASE_ANON_KEY` ของโปรเจกต์รุ่นเดิม หรือคีย์เริ่มต้นจาก `SUPABASE_PUBLISHABLE_KEYS` ของโปรเจกต์รุ่นใหม่โดยอัตโนมัติ ไม่ต้องเพิ่ม service_role key หรือ Gemini key ในหน้าเว็บ
@@ -110,6 +112,30 @@ supabase functions deploy book-assistant --project-ref iajfydwozedjdcxroeyv --no
 - ออกจากระบบ ตรวจว่าเพิ่ม/แก้ไขไม่ได้ แม้เรียก API โดยตรงด้วย anon key
 - เข้าบัญชีที่ไม่อยู่ใน `admin_users` ต้องเข้าแอดมินและใช้ AI ไม่ได้
 - ทดสอบภาพอ่านได้ ภาพไม่ชัด และโควตาไม่พอ โดยข้อความผิดพลาดต้องแสดงและแบบฟอร์มเดิมไม่หาย
+
+## 6. สร้างเว็บและ deploy บน Vercel
+
+1. ติดตั้งเครื่องมือตาม lockfile ด้วย `npm ci` จากโฟลเดอร์โปรเจกต์
+2. ตรวจรูปแบบและทดสอบด้วย `npm run format:check` และ `npm test`
+3. สร้างไฟล์ด้วย `npm run build` ผลลัพธ์จะอยู่ใน `dist/` ซึ่งสร้างใหม่ได้ ไม่ต้องแก้ไขไฟล์ในโฟลเดอร์นี้
+4. ใน Vercel ตั้ง Environment Variables สำหรับ environment ที่ต้องการใช้งาน:
+
+| ตัวแปร                     | ค่า                                                                |
+| -------------------------- | ------------------------------------------------------------------ |
+| `SUPABASE_URL`             | Project URL เช่น `https://YOUR_PROJECT.supabase.co`                |
+| `SUPABASE_PUBLISHABLE_KEY` | Publishable key หรือใช้ `SUPABASE_ANON_KEY` สำหรับ legacy anon key |
+| `AI_FUNCTION_NAME`         | ไม่จำเป็นต้องตั้ง หากใช้ชื่อ `book-assistant`                      |
+
+ใช้คีย์ที่เปิดเผยต่อเบราว์เซอร์ได้เท่านั้น ไม่ใส่ `service_role`, secret key หรือ `GEMINI_API_KEY` ในตัวแปรที่ใช้สร้างหน้าเว็บ คีย์ Gemini ยังคงอยู่ใน Supabase Edge Function Secrets
+
+5. โปรเจกต์มี `vercel.json` กำหนด build เป็น `node tools/build.mjs` และ Output Directory เป็น `dist` แล้ว หลังแก้ Environment Variables ให้ Redeploy เพื่อสร้าง `config.js` ใหม่
+6. เปิดหน้าร้าน รายละเอียด ตะกร้า ทำรายการ ติดตามคำสั่งซื้อ และหลังร้านจาก deployment ใหม่ เพื่อตรวจเส้นทางและการโหลดข้อมูล
+
+Build จะรวม CSS ที่แยกตามหน้าที่เป็นไฟล์เดียว ลดขนาด CSS/JavaScript และเติม hash ในชื่อไฟล์ Vercel เก็บ cache ระยะยาวเฉพาะไฟล์ที่มี hash ส่วน `config.js` ยังคง `no-cache` เพื่อให้ตรวจค่าล่าสุด
+
+การ deploy หน้าเว็บนี้ไม่ deploy `supabase/functions/book-assistant/index.ts` และไม่รัน SQL หากแก้ Edge Function ให้ deploy ฟังก์ชันแยกตามข้อ 4 หากแก้ schema ให้รัน SQL ที่เกี่ยวข้องแยกด้วย
+
+โครงสร้างโค้ดและแนวทางแก้ไขอยู่ใน `docs/MAINTENANCE.md` ชื่อหน้าที่ลูกค้าเปิดและข้อมูล localStorage ยังใช้ชื่อเดิม
 
 ## แก้ปัญหาที่พบบ่อย
 
