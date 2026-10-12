@@ -79,7 +79,7 @@
       BakkaStore.mode === 'demo'
         ? 'ร้านตัวอย่าง · หนังสือและราคาเป็นข้อมูลสมมติ'
         : 'คัดสรรเรื่องราวดี ๆ เพื่อคุณ';
-    return `<footer class="site-footer"><div class="container footer-top"><a class="brand" href="index.html"><span class="brand-mark">b</span><span>bakkabook.<small>A HOME FOR GOOD STORIES</small></span></a><p>ร้านเล็ก ๆ สำหรับคนที่เชื่อว่า<br>หนังสือดี ๆ เปลี่ยนวันธรรมดาให้พิเศษได้</p><a href="index.html#collection">ไปหาหนังสือเล่มถัดไป ${icon('arrow')}</a></div><div class="container footer-bottom"><span>© 2026 Bakkabook · Made for the love of reading.</span><span>${note}</span></div></footer>`;
+    return `<footer class="site-footer"><div class="container footer-top"><a class="brand" href="index.html"><span class="brand-mark">b</span><span>bakkabook.<small>A HOME FOR GOOD STORIES</small></span></a><p>ร้านเล็ก ๆ สำหรับคนที่เชื่อว่า<br>หนังสือดี ๆ เปลี่ยนวันธรรมดาให้พิเศษได้</p></div><div class="container footer-bottom"><span>© 2026 Bakkabook · Made for the love of reading.</span><span>${note}</span></div></footer>`;
   }
   function updateFavorites() {
     const count = document.getElementById('favorite-count');
@@ -95,8 +95,9 @@
     const saved = BakkaStore.favorites().includes(book.id);
     return `<article class="book-card" style="--card-delay:${Math.min(index, 7) * 35}ms">
       <div class="book-cover-area" style="--cover-bg:${['#e9e8df', '#ede4d7', '#e5e7eb', '#e3e9e2'][index % 4]}">
+      ${book.stock <= 0 ? '<span class="sold-out-overlay">SOLD OUT</span>' : ''}
       ${book.featured ? '<span class="book-label">BAKKA PICKS</span>' : ''}
-      <button class="save-book icon-button ${saved ? 'saved' : ''}" data-save="${escape(book.id)}" aria-label="${saved ? 'นำออกจาก' : 'เก็บเข้า'}ชั้นหนังสือ: ${escape(book.title)}" aria-pressed="${saved}">${icon('bookmark')}</button>
+      <button ${book.stock > 0 ? '' : 'disabled title="สินค้าหมด"'} class="save-book icon-button ${saved ? 'saved' : ''}" data-save="${escape(book.id)}" aria-label="${saved ? 'นำออกจาก' : 'เก็บเข้า'}ชั้นหนังสือ: ${escape(book.title)}" aria-pressed="${saved}">${icon('bookmark')}</button>
       <a href="product.html?id=${encodeURIComponent(book.id)}" tabindex="-1" aria-hidden="true"><img src="${escape(imageUrl(book.images?.[0]))}" alt="" loading="lazy" width="320" height="460"></a>
       </div><div class="book-card-info"><span class="eyebrow book-category">${escape(book.category)}</span><h3><a href="product.html?id=${encodeURIComponent(book.id)}">${escape(book.title)}</a></h3><p>${escape(book.author)}</p><div class="book-card-bottom"><strong>${money(book.price)}</strong><span class="availability ${book.stock === 0 ? 'sold-out' : ''}">${book.stock ? 'พร้อมส่ง · รวมส่งแล้ว' : 'สินค้าหมด'}</span>${book.stock > 0 ? `<button class="card-add-cart icon-button" data-cart="${escape(book.id)}" aria-label="เพิ่ม ${escape(book.title)} ลงตะกร้า">${icon('bag')}</button>` : ''}<a class="card-arrow" href="product.html?id=${encodeURIComponent(book.id)}" aria-label="ดู ${escape(book.title)}">${icon('arrow')}</a></div></div></article>`;
   }
@@ -129,7 +130,7 @@
         return;
       }
       const button = event.target.closest('[data-save]');
-      if (!button) return;
+      if (!button || button.disabled) return;
       try {
         const saved = BakkaStore.toggleFavorite(button.dataset.save);
         button.classList.toggle('saved', saved);

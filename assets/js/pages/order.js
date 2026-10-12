@@ -47,7 +47,20 @@
     try {
       const orders = await BakkaStore.getCustomerOrdersByPhone(phone);
       $('order-results-count').textContent = `พบ ${orders.length} รายการ`;
-      orderList.innerHTML = orders.map(orderMarkup).join('');
+      // Keep closed orders available without crowding ongoing purchases.
+      const closed = orders.filter((order) => ['completed', 'cancelled'].includes(order.status));
+      const active = orders.filter((order) => !['completed', 'cancelled'].includes(order.status));
+      orderList.innerHTML =
+        (active.length
+          ? active.map(orderMarkup).join('')
+          : '<p class="order-empty">ไม่มีคำสั่งซื้อที่กำลังดำเนินการ</p>') +
+        (closed.length
+          ? '<details class="order-history"><summary>ประวัติคำสั่งซื้อ (' +
+            closed.length +
+            ' รายการ)</summary>' +
+            closed.map(orderMarkup).join('') +
+            '</details>'
+          : '');
       // Resume with the phone used for these results, even if the input is edited.
       resultsPhone = phone;
       $('order-results').hidden = false;

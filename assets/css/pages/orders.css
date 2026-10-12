@@ -433,7 +433,7 @@
   border: 1px solid var(--line);
   border-radius: 11px;
 }
-.payment-thanks-mark {
+.payment-thanks-mark[data-icon] {
   display: grid;
   place-items: center;
   width: 45px;
@@ -444,7 +444,11 @@
   color: #617f57;
 }
 .payment-thanks-mark svg {
+  display: block;
   width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
 }
 .payment-thanks h1 {
   font-size: 24px;
@@ -659,4 +663,15 @@
   .payment-missing {
     padding: 25px 17px;
   }
+}
+
+.order-history > summary {
+  cursor: pointer;
+  padding: 18px 0;
+  font-weight: 600;
+}
+.order-empty {
+  text-align: center;
+  padding: 20px;
+  color: var(--muted);
 }
