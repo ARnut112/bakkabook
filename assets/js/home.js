@@ -1,0 +1,47 @@
+(async function () {
+  const { card, escape, empty, icon } = BakkaUI;
+  const params = new URLSearchParams(location.search);
+  const state = { query: params.get('q') || '', category: 'ทั้งหมด', sort: 'newest', favorites: params.get('shelf') === '1', featured: params.get('featured') === '1', limit: 8 };
+  let books = [];
+  const grid = document.getElementById('book-grid');
+  const message = document.getElementById('catalog-message');
+  const search = document.getElementById('search');
+  search.value = state.query;
+  document.getElementById('categories').innerHTML = ['ทั้งหมด', ...BAKKA_CATEGORIES].map(category => `<button class="category-chip ${category === state.category ? 'selected' : ''}" data-category="${escape(category)}" aria-pressed="${category === state.category}">${escape(category)}</button>`).join('');
+  function render() {
+    const results = BakkaStore.filter(state.featured ? books.filter(book => book.featured) : books, state);
+    grid.innerHTML = results.slice(0, state.limit).map(card).join('');
+    document.getElementById('result-count').textContent = `${results.length} เล่มบนชั้น`;
+    document.getElementById('load-more').hidden = results.length <= state.limit;
+    document.getElementById('collection-title').textContent = state.favorites ? 'ชั้นหนังสือของคุณ.' : state.featured ? 'คัดสรรโดยเรา.' : 'เล่มต่อไปของคุณ.';
+    document.getElementById('collection-description').textContent = state.favorites ? 'เก็บเล่มที่ชอบไว้ แล้วค่อยกลับมาอ่านเรื่องราวของมัน' : 'บางครั้ง หนังสือที่ดี ก็มาหาเราในเวลาที่พอดี';
+    const reset = '<button class="button secondary" data-reset>ดูหนังสือทั้งหมด</button>';
+    message.innerHTML = results.length ? '' : empty(state.favorites ? 'ยังไม่มีหนังสือบนชั้นนี้' : 'ยังไม่เจอเล่มที่คุณตามหา', state.favorites ? 'กดรูปที่คั่นหนังสือบนเล่มที่ชอบ เพื่อเก็บไว้ที่นี่ หรือเปลี่ยนคำค้นหา' : 'ลองเปลี่ยนคำค้นหาหรือหมวดหมู่ แล้วมาหาเรื่องราวดี ๆ กันใหม่', reset);
+    const active = document.getElementById('active-filter');
+    active.hidden = !state.favorites && !state.featured;
+    active.innerHTML = `<span>${state.favorites ? 'กำลังดูชั้นหนังสือของฉัน' : 'เฉพาะหนังสือ BAKKA PICKS'}</span><button class="text-link" data-reset>ดูทั้งหมด ${icon('close')}</button>`;
+    grid.setAttribute('aria-busy', 'false');
+  }
+  function reset() {
+    Object.assign(state, { query: '', category: 'ทั้งหมด', sort: 'newest', favorites: false, featured: false, limit: 8 });
+    search.value = ''; document.getElementById('sort').value = 'newest';
+    document.querySelectorAll('[data-category]').forEach(button => { const selected = button.dataset.category === 'ทั้งหมด'; button.classList.toggle('selected', selected); button.setAttribute('aria-pressed', selected); });
+    try { history.replaceState(null, '', location.pathname + '#collection'); } catch {}
+    render();
+  }
+  document.addEventListener('click', event => {
+    const button = event.target.closest('[data-category]');
+    if (button) {
+      state.category = button.dataset.category; state.limit = 8;
+      document.querySelectorAll('[data-category]').forEach(item => { item.classList.toggle('selected', item === button); item.setAttribute('aria-pressed', item === button); });
+      render();
+    }
+    if (event.target.closest('[data-reset]')) reset();
+  });
+  search.addEventListener('input', () => { state.query = search.value; state.limit = 8; render(); });
+  document.getElementById('sort').addEventListener('change', event => { state.sort = event.target.value; render(); });
+  document.getElementById('load-more').addEventListener('click', () => { state.limit += 8; render(); });
+  document.addEventListener('favorites-changed', () => { if (state.favorites) render(); });
+  try { books = await BakkaStore.list(); render(); }
+  catch (error) { grid.setAttribute('aria-busy', 'false'); document.getElementById('result-count').textContent = 'โหลดไม่สำเร็จ'; message.innerHTML = empty('เปิดชั้นหนังสือไม่สำเร็จ', error.message, '<button class="button secondary" onclick="location.reload()">ลองอีกครั้ง</button>'); }
+})();

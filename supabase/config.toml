@@ -1,0 +1,6 @@
+project_id = "bakkabook"
+
+[functions.book-assistant]
+# JWT validation happens inside the function via /auth/v1/user.
+# This also supports newer Supabase signing keys and publishable API keys.
+verify_jwt = false
