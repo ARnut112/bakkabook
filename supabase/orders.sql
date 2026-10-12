@@ -1,4 +1,4 @@
--- Run once in the SQL Editor for the shop's existing database.
+-- Run in the SQL Editor to install or update the shop's order workflow. Safe to rerun.
 begin;
 
 create table if not exists public.orders (
@@ -192,9 +192,12 @@ declare
   v_order_number text;
   v_order_id uuid;
 begin
-  if p_payment_method not in ('contact','qr') then raise exception 'กรุณาเลือกวิธีชำระเงิน'; end if;
+  if p_payment_method is distinct from 'qr' then raise exception 'คำสั่งซื้อใหม่นี้ชำระผ่าน QR เท่านั้น'; end if;
+  if not exists(select 1 from public.shop_payment_settings where id and qr_image_url<>'') then
+    raise exception 'ร้านยังไม่ได้ตั้งค่า QR รับเงิน กรุณาติดต่อร้านก่อนทำรายการ';
+  end if;
   v_order_number := public.create_book_order(p_customer_name,p_phone,p_line_id,p_address,p_note,p_items);
-  update public.orders set payment_method=p_payment_method where order_number=v_order_number returning id into v_order_id;
+  update public.orders set payment_method='qr',status='awaiting_payment',shipping_fee=0 where order_number=v_order_number returning id into v_order_id;
   return jsonb_build_object('order_number',v_order_number,'order_id',v_order_id);
 end;
 $$;

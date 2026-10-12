@@ -38,8 +38,8 @@ const output = path.join(root,'test-results'); fs.mkdirSync(output,{recursive:tr
     await page.locator('[data-save="book-01"]').click(); assert.equal(await page.locator('#favorite-count').textContent(),'1');
     await page.goto(base+'index.html'); await page.locator('[data-cart="book-01"]').click(); assert.equal(await page.locator('#cart-count').textContent(),'1');
     await page.goto(base+'cart.html'); await page.waitForSelector('#cart-content:not([hidden])');
-    assert((await page.locator('.checkout-steps').textContent()).includes('ชำระด้วย QR'));
-    assert.equal(await page.locator('[name="payment_method"]').count(),2);
+    assert((await page.locator('.checkout-steps').textContent()).includes('แสดง QR'));
+    assert.equal(await page.locator('[name="payment_method"]').count(),0);
     assert.equal(await page.locator('.cart-item').count(),1); await page.locator('[data-quantity="book-01"]').fill('2');
     assert.equal(await page.locator('#cart-count').textContent(),'2'); assert.equal(await page.locator('#cart-total').textContent(),'฿570');
     await page.locator('[data-remove-cart="book-01"]').click(); assert(await page.locator('#cart-empty').isVisible()); assert(!await page.locator('#place-order').isEnabled());

@@ -52,11 +52,11 @@ test('cart persists item quantities and removes items when quantity is cleared',
   assert.deepEqual(JSON.parse(JSON.stringify(store.cart())),[{id:'book-01',quantity:2}]);
   store.clearCart(); assert.equal(store.cart().length,0);
 });
-test('checkout stores the resumable order and sends the selected payment method',async()=>{
+test('checkout creates a QR order and stores its resume details',async()=>{
   let call;
   const {store}=app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async (url,options)=>{call={url,options};return response({order_number:'BK-261012-ABC123',order_id:'order-uuid'});});
   store.addToCart('book-id',2);
-  const order=await store.placeOrder({name:'น้องนัท',phone:'0812345678',line_id:'nattan_book',address:'กรุงเทพมหานคร',note:'โทรก่อนส่ง',payment_method:'qr'});
+  const order=await store.placeOrder({name:'น้องนัท',phone:'0812345678',line_id:'nattan_book',address:'กรุงเทพมหานคร',note:'โทรก่อนส่ง'});
   assert.deepEqual(JSON.parse(JSON.stringify(order)),{order_number:'BK-261012-ABC123',order_id:'order-uuid'}); assert.match(call.url,/rpc\/submit_book_order$/);
   assert.deepEqual(JSON.parse(call.options.body),{p_customer_name:'น้องนัท',p_phone:'0812345678',p_line_id:'nattan_book',p_address:'กรุงเทพมหานคร',p_note:'โทรก่อนส่ง',p_payment_method:'qr',p_items:[{book_id:'book-id',quantity:2}]});
   assert.deepEqual(JSON.parse(JSON.stringify(store.lastOrder())),{order_number:'BK-261012-ABC123',order_id:'order-uuid',phone:'0812345678',payment_method:'qr'});

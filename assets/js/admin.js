@@ -34,7 +34,7 @@
     try { books = await BakkaStore.list(true); renderTable(); }
     catch (error) { showError('dashboard-error', 'โหลดข้อมูลไม่สำเร็จ: ' + error.message + ' — กรุณารีเฟรชเพื่อลองใหม่'); }
   }
-  const orderStatuses = { pending:'รอตรวจสอบ', contacted:'ติดต่อแล้ว / รอชำระ', awaiting_payment:'แจ้งยอดแล้ว / รอ QR', slip_submitted:'รอตรวจสลิป', confirmed:'ชำระแล้ว / เตรียมส่ง', shipped:'จัดส่งแล้ว', cancelled:'ยกเลิก' };
+  const orderStatuses = { pending:'รอตรวจสอบ', contacted:'ติดต่อแล้ว / รอชำระ', awaiting_payment:'รอชำระผ่าน QR', slip_submitted:'รอตรวจสลิป', confirmed:'ชำระแล้ว / เตรียมส่ง', shipped:'จัดส่งแล้ว', cancelled:'ยกเลิก' };
   async function loadPaymentSettings() {
     $('payment-settings-message').textContent='';
     if (BakkaStore.mode!=='live') { $('payment-settings-message').textContent='เชื่อมต่อ Supabase ก่อนตั้งค่า QR'; return; }
@@ -48,7 +48,7 @@
       orders = await Promise.all(orders.map(async order=>({...order,slipUrl:order.slip_path?await BakkaStore.signedPaymentSlip(order.slip_path).catch(()=> ''):''})));
       $('orders-count').textContent = `${orders.length} รายการ`;
       $('orders-empty').hidden = orders.length > 0;
-      $('orders-table-body').innerHTML = orders.map(order => `<tr data-order-row="${escape(order.id)}"><td><strong>${escape(order.order_number)}</strong><br><span>${new Date(order.created_at).toLocaleString('th-TH')}</span></td><td><div class="order-customer"><strong>${escape(order.customer_name)}</strong><a href="tel:${escape(order.phone)}">${escape(order.phone)}</a>${order.line_id ? `<span>LINE/Facebook: ${escape(order.line_id)}</span>` : ''}<span>${escape(order.address)}</span>${order.note ? `<span>หมายเหตุ: ${escape(order.note)}</span>` : ''}</div></td><td><div class="order-item-list">${(order.order_items || []).map(item => `${escape(item.book_title)} × ${item.quantity} · ${money(item.unit_price * item.quantity)}`).join('<br>')}</div></td><td><strong>${money(Number(order.total)+Number(order.shipping_fee||0))}</strong><br><small>สินค้า ${money(order.total)}</small><label class="sr-only" for="shipping-${escape(order.id)}">ค่าส่ง ${escape(order.order_number)}</label><input class="shipping-input" id="shipping-${escape(order.id)}" data-shipping="${escape(order.id)}" type="number" min="0" max="100000" step="0.01" value="${Number(order.shipping_fee||0)}" ${order.status==='cancelled'?'disabled':''} aria-label="ค่าส่ง ${escape(order.order_number)}"></td><td><span>${order.payment_method==='qr'?'โอน QR':'ติดต่อร้าน'}</span>${order.slipUrl?`<br><a class="order-proof-link" href="${escape(order.slipUrl)}" target="_blank" rel="noopener">เปิดดูสลิป</a>`:''}</td><td><label class="sr-only" for="order-status-${escape(order.id)}">สถานะ ${escape(order.order_number)}</label><select id="order-status-${escape(order.id)}" data-order-status="${escape(order.id)}" ${order.status==='cancelled'?'disabled':''}>${Object.entries(orderStatuses).map(([value,label])=>`<option value="${value}" ${value===order.status?'selected':''}>${label}</option>`).join('')}</select></td><td><button class="button secondary order-save" data-save-order="${escape(order.id)}" ${order.status==='cancelled'?'disabled':''}>ดำเนินการต่อ</button></td></tr>`).join('');
+      $('orders-table-body').innerHTML = orders.map(order => `<tr data-order-row="${escape(order.id)}"><td><strong>${escape(order.order_number)}</strong><br><span>${new Date(order.created_at).toLocaleString('th-TH')}</span></td><td><div class="order-customer"><strong>${escape(order.customer_name)}</strong><a href="tel:${escape(order.phone)}">${escape(order.phone)}</a>${order.line_id ? `<span>LINE/Facebook: ${escape(order.line_id)}</span>` : ''}<span>${escape(order.address)}</span>${order.note ? `<span>หมายเหตุ: ${escape(order.note)}</span>` : ''}</div></td><td><div class="order-item-list">${(order.order_items || []).map(item => `${escape(item.book_title)} × ${item.quantity} · ${money(item.unit_price * item.quantity)}`).join('<br>')}</div></td><td><strong>${money(Number(order.total)+Number(order.shipping_fee||0))}</strong><br><small>${Number(order.shipping_fee||0)>0?'รวมค่าส่ง '+money(order.shipping_fee):'รวมค่าจัดส่งแล้ว'}</small></td><td><span>${order.payment_method==='qr'?'โอน QR':'ติดต่อร้าน'}</span>${order.slipUrl?`<br><a class="order-proof-link" href="${escape(order.slipUrl)}" target="_blank" rel="noopener">เปิดดูสลิป</a>`:''}</td><td><label class="sr-only" for="order-status-${escape(order.id)}">สถานะ ${escape(order.order_number)}</label><select id="order-status-${escape(order.id)}" data-order-status="${escape(order.id)}" ${order.status==='cancelled'?'disabled':''}>${Object.entries(orderStatuses).map(([value,label])=>`<option value="${value}" ${value===order.status?'selected':''}>${label}</option>`).join('')}</select></td><td><button class="button secondary order-save" data-save-order="${escape(order.id)}" data-shipping-fee="${Number(order.shipping_fee||0)}" ${order.status==='cancelled'?'disabled':''}>ดำเนินการต่อ</button></td></tr>`).join('');
     } catch (error) { showError('orders-error','โหลดคำสั่งซื้อไม่สำเร็จ: ' + error.message); }
   }
   function renderImages() {
@@ -150,9 +150,15 @@
     const saveOrder = event.target.closest('[data-save-order]');
     if (saveOrder) {
       const select = document.querySelector(`[data-order-status="${CSS.escape(saveOrder.dataset.saveOrder)}"]`);
-      saveOrder.disabled = true;
-      const shipping=$(`[data-shipping="${CSS.escape(saveOrder.dataset.saveOrder)}"]`);
-      BakkaStore.updateOrderWorkflow(saveOrder.dataset.saveOrder,select.value,shipping.value).then(async () => { toast('อัปเดตขั้นตอนคำสั่งซื้อแล้ว'); await loadOrders(); await loadBooks(); }).catch(error => showError('orders-error','บันทึกสถานะไม่สำเร็จ: ' + error.message)).finally(() => { saveOrder.disabled = false; });
+      saveOrder.disabled = true; saveOrder.textContent = 'กำลังบันทึก...';
+      BakkaStore.updateOrderWorkflow(saveOrder.dataset.saveOrder,select.value,saveOrder.dataset.shippingFee||0).then(() => {
+        toast('บันทึกสถานะคำสั่งซื้อแล้ว');
+        // The database write is complete; background refreshes should not keep this button busy.
+        void loadOrders(); void loadBooks();
+      }).catch(error => {
+        showError('orders-error','บันทึกสถานะไม่สำเร็จ: ' + error.message + ' — ตรวจการตั้งค่า Supabase แล้วลองอีกครั้ง');
+        $('orders-error').scrollIntoView({block:'center',behavior:'smooth'});
+      }).finally(() => { saveOrder.disabled = false; saveOrder.textContent = 'ดำเนินการต่อ'; });
     }
     if (event.target.closest('#apply-ai') && suggestion) {
       if (['title','author'].some(key => form.elements[key].value.trim()) && !confirm('นำชื่อที่อ่านได้มาแทนชื่อหนังสือหรือผู้เขียนเดิมหรือไม่?')) return;

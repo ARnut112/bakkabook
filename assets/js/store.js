@@ -193,7 +193,7 @@
       saveCart(items); return items;
     },
     clearCart() { saveCart([]); },
-    async placeOrder({ name, phone, line_id = '', address, note = '', payment_method = 'contact' }) {
+    async placeOrder({ name, phone, line_id = '', address, note = '', payment_method = 'qr' }) {
       checkConfiguration();
       if (!configured) throw new Error('ระบบรับคำสั่งซื้อยังไม่พร้อมใช้งาน กรุณาติดต่อร้าน');
       const items = cart();
