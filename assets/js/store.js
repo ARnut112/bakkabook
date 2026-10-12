@@ -1,11 +1,20 @@
 (function () {
-  const config = window.BAKKA_CONFIG || {};
+  const config = window.BakkaConfiguration.resolve(window.BAKKA_CONFIG || {});
   const BOOK_KEY = 'bakkabook.books.v1';
-  const SESSION_KEY = 'bakkabook.session.v1';
+  const SESSION_KEY = 'bakkabook.session.v2.' + config.supabaseUrl;
   const FAVORITE_KEY = 'bakkabook.favorites.v1';
-  const configured = Boolean(config.supabaseUrl && config.supabaseAnonKey);
-  const base = (config.supabaseUrl || '').replace(/\/$/, '');
+  const configured = config.mode === 'live';
+  const base = config.supabaseUrl;
   let refreshing = null;
+
+  function checkConfiguration() { if (config.error) throw new Error(config.error); }
+  async function fetchResponse(url, options = {}) {
+    try { return await fetch(url, options); }
+    catch (error) {
+      if (['TimeoutError','AbortError'].includes(error.name)) throw new Error('การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองใหม่');
+      throw new Error('ติดต่อ Supabase ไม่ได้ ตรวจสอบอินเทอร์เน็ตและ Project URL หรือสถานะโปรเจกต์ใน Supabase Dashboard');
+    }
+  }
 
   function read(key, fallback, storage = localStorage) {
     const raw = storage.getItem(key);
@@ -24,7 +33,13 @@
     const text = await response.text();
     let data;
     try { data = text ? JSON.parse(text) : null; } catch { throw new Error('บริการตอบกลับไม่ถูกต้อง กรุณาลองใหม่'); }
-    if (!response.ok) throw new Error(data?.msg || data?.message || data?.error_description || data?.error || 'ไม่สามารถติดต่อบริการได้');
+    if (!response.ok) {
+      if (data?.code === 'PGRST205' || data?.code === '42P01') throw new Error('ไม่พบตารางที่เว็บไซต์ต้องใช้ กรุณารัน supabase/schema.sql ใน Supabase SQL Editor');
+      if (data?.code === '42501') throw new Error('บัญชีนี้ไม่มีสิทธิ์เข้าถึงข้อมูล ตรวจสอบ admin_users และ policies ตามไฟล์ supabase/schema.sql');
+      const message = data?.msg || data?.message || data?.error_description || data?.error;
+      if (typeof message === 'string' && /invalid api key/i.test(message)) throw new Error('Publishable key ไม่ถูกต้องหรือไม่ตรงกับโปรเจกต์ Supabase');
+      throw new Error(typeof message === 'string' ? message : 'ไม่สามารถติดต่อบริการได้');
+    }
     return data;
   }
   async function token() {
@@ -33,7 +48,7 @@
     if (current.expires_at > Date.now() + 60000) return current.access_token;
     if (!refreshing) refreshing = (async () => {
       try {
-        const data = await parseResponse(await fetch(base + '/auth/v1/token?grant_type=refresh_token', {
+        const data = await parseResponse(await fetchResponse(base + '/auth/v1/token?grant_type=refresh_token', {
           method: 'POST', headers: { apikey: config.supabaseAnonKey, 'Content-Type': 'application/json' },
           body: JSON.stringify({ refresh_token: current.refresh_token }), signal: AbortSignal.timeout(20000)
         }));
@@ -43,11 +58,14 @@
     })();
     return refreshing;
   }
-  async function request(path, options = {}) {
-    const accessToken = await token();
+  async function request(path, options = {}, authenticated = false) {
+    checkConfiguration();
+    // Public storefront reads must work even when an old admin session has expired.
+    const accessToken = authenticated ? await token() : null;
+    if (authenticated && !accessToken) throw new Error('กรุณาเข้าสู่ระบบหลังร้านก่อน');
     const headers = { apikey: config.supabaseAnonKey, ...options.headers };
     if (accessToken) headers.Authorization = 'Bearer ' + accessToken;
-    return parseResponse(await fetch(base + path, { ...options, headers, signal: AbortSignal.timeout(30000) }));
+    return parseResponse(await fetchResponse(base + path, { ...options, headers, signal: AbortSignal.timeout(30000) }));
   }
   function demoBooks() {
     const saved = read(BOOK_KEY, null);
@@ -72,20 +90,24 @@
     return result;
   }
   const Store = {
-    mode: configured ? 'live' : 'demo',
+    mode: config.mode,
+    configurationError: config.error,
     session,
     async list(admin = false) {
-      if (configured) return request('/rest/v1/books?select=*&order=created_at.desc' + (admin ? '' : '&status=eq.published'));
+      checkConfiguration();
+      if (configured) return request('/rest/v1/books?select=*&order=created_at.desc' + (admin ? '' : '&status=eq.published'), {}, admin);
       return demoBooks().filter(book => admin || book.status === 'published').sort((a,b) => b.created_at.localeCompare(a.created_at));
     },
     async get(id, admin = false) {
+      checkConfiguration();
       if (configured) {
-        const data = await request('/rest/v1/books?select=*&id=eq.' + encodeURIComponent(id) + (admin ? '' : '&status=eq.published'));
+        const data = await request('/rest/v1/books?select=*&id=eq.' + encodeURIComponent(id) + (admin ? '' : '&status=eq.published'), {}, admin);
         return data[0] || null;
       }
       return demoBooks().find(book => book.id === id && (admin || book.status === 'published')) || null;
     },
     async save(input, id = null) {
+      checkConfiguration();
       const book = normalize(input);
       if (configured) {
         // Convert locally selected images to Storage URLs before saving the row.
@@ -97,17 +119,17 @@
             const userId = session()?.user?.id;
             if (!userId) throw new Error('กรุณาเข้าสู่ระบบก่อนบันทึก');
             const objectPath = userId + '/' + crypto.randomUUID() + '.jpg';
-            await request('/storage/v1/object/book-images/' + objectPath, { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob });
+            await request('/storage/v1/object/book-images/' + objectPath, { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob }, true);
             uploaded.push(objectPath);
             book.images[i] = base + '/storage/v1/object/public/book-images/' + objectPath;
           }
           const rows = await request('/rest/v1/books' + (id ? '?id=eq.' + encodeURIComponent(id) : ''), {
             method: id ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify(book)
-          });
+          }, true);
           if (!rows?.length) throw new Error('ไม่พบรายการหรือไม่มีสิทธิ์แก้ไข');
           return rows[0];
         } catch (error) {
-          if (uploaded.length) await request('/storage/v1/object/book-images', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: uploaded }) }).catch(() => {});
+          if (uploaded.length) await request('/storage/v1/object/book-images', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: uploaded }) }, true).catch(() => {});
           throw error;
         }
       }
@@ -119,28 +141,33 @@
       return saved;
     },
     async remove(id) {
+      checkConfiguration();
       if (configured) {
-        const rows = await request('/rest/v1/books?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: { Prefer: 'return=representation' } });
+        const rows = await request('/rest/v1/books?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: { Prefer: 'return=representation' } }, true);
         if (!rows?.length) throw new Error('ไม่พบรายการหรือไม่มีสิทธิ์ลบ');
         return;
       }
       write(BOOK_KEY, demoBooks().filter(book => book.id !== id));
     },
     async login(email, password) {
-      const data = await parseResponse(await fetch(base + '/auth/v1/token?grant_type=password', {
+      checkConfiguration();
+      if (!configured) throw new Error('ยังเป็นโหมดตัวอย่าง กรุณาตั้งค่า Supabase ก่อนเข้าสู่ระบบ');
+      const data = await parseResponse(await fetchResponse(base + '/auth/v1/token?grant_type=password', {
         method: 'POST', headers: { apikey: config.supabaseAnonKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }), signal: AbortSignal.timeout(20000)
       }));
       saveSession(data);
-      if (!await Store.isAdmin()) { await Store.logout(); throw new Error('บัญชีนี้ยังไม่ได้รับสิทธิ์ผู้ดูแลร้าน'); }
+      try { if (!await Store.isAdmin()) throw new Error('บัญชีนี้ยังไม่ได้รับสิทธิ์ผู้ดูแลร้าน กรุณาเพิ่ม UUID ของผู้ใช้ในตาราง admin_users'); }
+      catch (error) { await Store.logout().catch(() => {}); throw error; }
     },
     async isAdmin() {
+      checkConfiguration();
       if (!configured) return true;
       if (!session()) return false;
-      const rows = await request('/rest/v1/admin_users?select=user_id&user_id=eq.' + encodeURIComponent(session().user.id));
+      const rows = await request('/rest/v1/admin_users?select=user_id&user_id=eq.' + encodeURIComponent(session().user.id), {}, true);
       return rows.length > 0;
     },
     async logout() {
-      try { if (configured && session()) await request('/auth/v1/logout', { method: 'POST' }); }
+      try { if (configured && session()) await request('/auth/v1/logout', { method: 'POST' }, true); }
       finally { sessionStorage.removeItem(SESSION_KEY); }
     },
     favorites() { const ids = read(FAVORITE_KEY, []); return Array.isArray(ids) ? ids : []; },
@@ -150,10 +177,11 @@
       write(FAVORITE_KEY, next); return next.includes(id);
     },
     async analyze(image) {
+      checkConfiguration();
       if (!configured) throw new Error('เชื่อม Supabase และ Gemini ก่อนใช้งาน AI จริง');
       const accessToken = await token();
       if (!accessToken) throw new Error('กรุณาเข้าสู่ระบบก่อนใช้ AI');
-      return parseResponse(await fetch(base + '/functions/v1/' + encodeURIComponent(config.aiFunctionName || 'book-assistant'), {
+      return parseResponse(await fetchResponse(base + '/functions/v1/' + encodeURIComponent(config.aiFunctionName || 'book-assistant'), {
         method: 'POST', headers: { apikey: config.supabaseAnonKey, Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
         body: JSON.stringify({ image }), signal: AbortSignal.timeout(110000)
       }));

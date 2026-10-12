@@ -11,6 +11,10 @@
     $('demo-note').textContent = 'เชื่อมต่อ Supabase · การเปลี่ยนแปลงจะบันทึกลงฐานข้อมูลของร้าน';
     $('ai-help').textContent = 'เลือกภาพปกแล้วกดอ่านปก รูปจะส่งให้ Gemini ช่วยระบุหนังสือและค้นเรื่องย่อ คุณตรวจทานก่อนนำไปใช้ได้';
     $('demo-ai').hidden = true;
+  } else if (BakkaStore.mode === 'invalid') {
+    $('mode-badge').textContent = 'ตั้งค่าไม่ครบ';
+    $('login-submit').disabled = true;
+    $('analyze-cover').disabled = true;
   } else {
     $('analyze-cover').disabled = true; $('analyze-cover').title = 'เชื่อม Supabase และ Gemini ก่อนใช้งาน';
   }

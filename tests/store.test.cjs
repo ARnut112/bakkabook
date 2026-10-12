@@ -10,8 +10,8 @@ function storage() {
   return { getItem:key => data.get(key) ?? null, setItem:(key,value) => data.set(key,value), removeItem:key => data.delete(key) };
 }
 function app(config = {}, fetch = () => { throw new Error('Unexpected network request'); }) {
-  const context = vm.createContext({ window:{ BAKKA_CONFIG:config }, localStorage:storage(), sessionStorage:storage(), structuredClone, crypto:webcrypto, URL, AbortSignal, fetch });
-  for (const file of ['data.js','store.js']) vm.runInContext(fs.readFileSync(path.join(root,'assets/js',file),'utf8'),context);
+  const context = vm.createContext({ window:{ BAKKA_CONFIG:config }, localStorage:storage(), sessionStorage:storage(), structuredClone, crypto:webcrypto, URL, AbortSignal, atob, fetch });
+  for (const file of ['data.js','configuration.js','store.js']) vm.runInContext(fs.readFileSync(path.join(root,'assets/js',file),'utf8'),context);
   return { store:context.window.BakkaStore, context, seed:context.window.BAKKA_SEED };
 }
 const response = (data,status=200) => ({ ok:status < 400, status, text:async () => JSON.stringify(data) });
@@ -57,14 +57,14 @@ test('validation and storage exhaustion preserve existing books', async () => {
 });
 test('live uses published-only reads and admin writes with a session token', async () => {
   const calls = [];
-  const { store, seed } = app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'public-test-key'},async (url,options)=>{
+  const { store, seed } = app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async (url,options)=>{
     calls.push({url,options});
     if(url.includes('/auth/v1/token')) return response({access_token:'test-access',refresh_token:'test-refresh',expires_in:3600,user:{id:'user-id'}});
     if(url.includes('/admin_users')) return response([{user_id:'user-id'}]);
     return response([{id:'live-book-id'}]);
   });
   await store.list(); assert(calls.at(-1).url.includes('status=eq.published'));
-  assert.equal(calls.at(-1).options.headers.apikey,'public-test-key');
+  assert.equal(calls.at(-1).options.headers.apikey,'sb_publishable_test');
   await store.login('owner@example.com','not-a-real-password');
   assert.equal(await store.isAdmin(),true);
   await store.save({...seed[0],images:['https://example.com/book.jpg']});
@@ -75,7 +75,7 @@ test('live uses published-only reads and admin writes with a session token', asy
   await store.remove('live-book-id'); assert.equal(calls.at(-1).options.method,'DELETE');
 });
 test('a logged in non-admin is rejected and session is removed', async () => {
-  const { store } = app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'test'},async url=> {
+  const { store } = app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async url=> {
     if(url.includes('/token')) return response({access_token:'token',refresh_token:'r',expires_in:3600,user:{id:'not-admin'}});
     return response([]);
   });
@@ -83,4 +83,30 @@ test('a logged in non-admin is rejected and session is removed', async () => {
 });
 test('all sample book illustrations exist locally',()=>{
   const { seed } = app(); for (const book of seed) for (const image of book.images) assert(fs.existsSync(path.join(root,image)),image);
+});
+
+test('configuration trims whitespace and converts Data API URL to project URL',async()=>{
+  let requested;
+  const {store}=app({supabaseUrl:' https://example.supabase.co/rest/v1/ ',supabaseAnonKey:' sb_publishable_test '},async url=>{requested=url;return response([]);});
+  await store.list(); assert.equal(store.mode,'live'); assert.equal(requested,'https://example.supabase.co/rest/v1/books?select=*&order=created_at.desc&status=eq.published');
+});
+test('incomplete, invalid, and secret configurations cannot silently save to demo storage',async()=>{
+  const configurations=[{supabaseUrl:'https://example.supabase.co'},{supabaseAnonKey:'sb_publishable_test'},{supabaseUrl:'sb_publishable_test',supabaseAnonKey:'sb_publishable_test'},{supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_secret_private'}];
+  for(const config of configurations){const {store,seed}=app(config);assert.equal(store.mode,'invalid');await assert.rejects(store.list());await assert.rejects(store.save(seed[0]));}
+});
+test('expired admin session cannot block public reads and anonymous writes are refused',async()=>{
+  const calls=[];
+  const {store,context,seed}=app({supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'},async (url,options)=>{calls.push({url,options});return response([]);});
+  const key='bakkabook.session.v2.https://example.supabase.co';
+  context.sessionStorage.setItem(key,JSON.stringify({access_token:'expired',refresh_token:'expired',expires_at:1,user:{id:'owner'}}));
+  await store.list(); await store.get('id');
+  assert.equal(calls.length,2);assert(calls.every(c=>!c.url.includes('/auth/')&&!c.options.headers.Authorization));
+  context.sessionStorage.removeItem(key);
+  await assert.rejects(store.save({...seed[0],images:['https://example.com/cover.jpg']}),/เข้าสู่ระบบ/);
+  assert.equal(calls.length,2);
+});
+test('network errors and missing tables explain the next action',async()=>{
+  const config={supabaseUrl:'https://example.supabase.co',supabaseAnonKey:'sb_publishable_test'};
+  await assert.rejects(app(config,async()=>{throw new TypeError('Failed to fetch');}).store.list(),/Project URL/);
+  await assert.rejects(app(config,async()=>response({code:'PGRST205',message:'missing'},404)).store.list(),/schema.sql/);
 });

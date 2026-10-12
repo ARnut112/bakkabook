@@ -45,3 +45,8 @@ test('AI endpoint leaves description empty if search has no grounded sources',as
   assert.equal(result.description,''); assert.deepEqual(result.sources,[]);
   assert.equal(calls.filter(call=>call.url.includes('googleapis')).length,2);
 });
+test('AI accepts the production Vercel origin and still rejects anonymous requests',async()=>{
+  const {handler,request}=setup();
+  const response=await handler(request(false,'https://bakkabook.vercel.app'));
+  assert.equal(response.status,401);assert.equal(response.headers.get('access-control-allow-origin'),'https://bakkabook.vercel.app');
+});

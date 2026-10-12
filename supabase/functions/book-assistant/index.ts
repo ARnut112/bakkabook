@@ -1,7 +1,7 @@
 // Runs in Supabase Edge Functions. No secret is exposed in browser JavaScript.
 // The image is read first; then Google Search grounds the book description.
 const categories = ['วรรณกรรม','พัฒนาตัวเอง','ศิลปะและการออกแบบ','ไลฟ์สไตล์','ท่องเที่ยว'];
-const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || 'http://127.0.0.1:8085,http://localhost,http://shopna.test').split(',').map(s => s.trim());
+const allowedOrigins = (Deno.env.get('ALLOWED_ORIGINS') || 'http://127.0.0.1:8085,http://localhost,http://shopna.test,https://bakkabook.vercel.app').split(',').map(s => s.trim()).filter(Boolean);
 
 function headers(origin: string) {
   return { 'Access-Control-Allow-Origin': origin, 'Vary': 'Origin',
