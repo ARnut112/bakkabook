@@ -938,17 +938,33 @@ a {
 }
 
 /* Keep sold-out covers browsable while marking unavailable stock. */
+.book-cover-area:has(.sold-out-overlay) img {
+  filter: blur(3px) grayscale(0.45);
+  opacity: 0.65;
+}
+.book-cover-area:has(.sold-out-overlay)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(245, 243, 234, 0.18);
+  pointer-events: none;
+}
 .sold-out-overlay {
   position: absolute;
   z-index: 2;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  padding: 10px 20px;
-  background: rgba(30, 65, 55, 0.94);
-  color: white;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  transform: translate(-50%, -50%) rotate(-15deg);
+  width: 85%;
+  padding: 9px 0;
+  border-block: 3px solid currentColor;
+  background: rgba(250, 248, 240, 0.8);
+  color: #24483e;
+  font-size: clamp(18px, 2.5vw, 30px);
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  letter-spacing: 0.1em;
   white-space: nowrap;
   pointer-events: none;
 }
