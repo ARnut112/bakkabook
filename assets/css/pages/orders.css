@@ -675,3 +675,45 @@
   padding: 20px;
   color: var(--muted);
 }
+.shipping-fields {
+  display: grid;
+  gap: 10px;
+  min-width: 180px;
+  margin-top: 12px;
+}
+.shipping-fields label,
+.order-shipping label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+}
+.shipping-fields input,
+.tracking-number {
+  width: 100%;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: white;
+  color: var(--ink);
+  font: inherit;
+}
+.order-shipping {
+  padding: 16px;
+  margin-top: 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.order-shipping p {
+  margin: 8px 0;
+}
+.order-shipping small {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+}
+.order-received {
+  margin-top: 16px;
+}

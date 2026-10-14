@@ -153,7 +153,7 @@
               )
               .join(
                 '',
-              )}</select></td><td><button class="button secondary order-save" data-save-order="${escape(order.id)}" data-shipping-fee="${Number(order.shipping_fee || 0)}" ${['cancelled', 'completed'].includes(order.status) ? 'disabled' : ''}>บันทึกสถานะ</button></td></tr>`,
+              )}</select><div class="shipping-fields"><label>บริษัทขนส่ง<input data-carrier maxlength="80" placeholder="เช่น ไปรษณีย์ไทย, Flash" value="${escape(order.carrier || '')}" ${['cancelled', 'completed'].includes(order.status) ? 'disabled' : ''}></label><label>เลขพัสดุ<input data-tracking maxlength="100" placeholder="กรอกก่อนบันทึกจัดส่ง" value="${escape(order.tracking_number || '')}" ${['cancelled', 'completed'].includes(order.status) ? 'disabled' : ''}></label></div></td><td><button class="button secondary order-save" data-save-order="${escape(order.id)}" data-shipping-fee="${Number(order.shipping_fee || 0)}" ${['cancelled', 'completed'].includes(order.status) ? 'disabled' : ''}>บันทึกสถานะ</button></td></tr>`,
         )
         .join('');
     } catch (error) {
@@ -387,11 +387,20 @@
       );
       saveOrder.disabled = true;
       saveOrder.textContent = 'กำลังบันทึก...';
-      BakkaStore.updateOrderWorkflow(
-        saveOrder.dataset.saveOrder,
-        select.value,
-        saveOrder.dataset.shippingFee || 0,
-      )
+      const row = saveOrder.closest('tr');
+      const saving =
+        select.value === 'shipped'
+          ? BakkaStore.saveOrderShipping(
+              saveOrder.dataset.saveOrder,
+              row.querySelector('[data-carrier]').value,
+              row.querySelector('[data-tracking]').value,
+            )
+          : BakkaStore.updateOrderWorkflow(
+              saveOrder.dataset.saveOrder,
+              select.value,
+              saveOrder.dataset.shippingFee || 0,
+            );
+      saving
         .then(() => {
           toast('บันทึกสถานะคำสั่งซื้อแล้ว');
           // The database write is complete; background refreshes should not keep this button busy.

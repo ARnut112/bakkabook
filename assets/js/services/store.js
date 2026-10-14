@@ -391,6 +391,32 @@
         body: JSON.stringify({ p_phone: phone }),
       });
     },
+    async confirmOrderReceived(orderId, orderNumber, phone) {
+      checkConfiguration();
+      return request('/rest/v1/rpc/confirm_order_received', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_order_id: orderId, p_order_number: orderNumber, p_phone: phone }),
+      });
+    },
+    async saveOrderShipping(orderId, carrier, trackingNumber) {
+      checkConfiguration();
+      if (!carrier.trim() || !trackingNumber.trim())
+        throw new Error('กรุณากรอกบริษัทขนส่งและเลขพัสดุ');
+      return request(
+        '/rest/v1/rpc/save_order_shipping',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            p_order_id: orderId,
+            p_carrier: carrier.trim(),
+            p_tracking_number: trackingNumber.trim(),
+          }),
+        },
+        true,
+      );
+    },
     async getBookReservationStatus(bookId) {
       checkConfiguration();
       return request('/rest/v1/rpc/get_book_reservation_status', {

@@ -274,9 +274,12 @@ test('order resume uses the searched phone even when the customer edits the inpu
   get('lookup-phone').value = '0899999999';
   get('order-list').emit('click', {
     target: {
-      closest: () => ({
-        dataset: { orderNumber: 'BK-1', orderId: 'order-id', paymentMethod: 'qr' },
-      }),
+      closest: (selector) =>
+        selector === '[data-resume-order]'
+          ? {
+              dataset: { orderNumber: 'BK-1', orderId: 'order-id', paymentMethod: 'qr' },
+            }
+          : null,
     },
   });
   assert.equal(remembered.phone, searchedPhone);

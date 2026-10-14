@@ -33,11 +33,26 @@
     const action = canResume
       ? `<a class="button secondary order-resume" href="payment.html?order=${encodeURIComponent(order.order_number)}" data-resume-order data-order-number="${BakkaUI.escape(order.order_number)}" data-order-id="${BakkaUI.escape(order.order_id)}" data-payment-method="${BakkaUI.escape(order.payment_method)}">${order.payment_method === 'qr' ? 'ไปหน้าชำระเงินด้วย QR' : 'ดูรายละเอียดการติดต่อ'}</a>`
       : '';
-    return `<article class="order-result"><div class="order-status-banner"><span class="order-status-dot"></span><div><strong>${BakkaUI.escape(statusLabels[order.status] || 'กำลังดำเนินการ')}</strong><small>${BakkaUI.escape(order.order_number)} · ${new Date(order.created_at).toLocaleDateString('th-TH')}</small></div></div><div class="order-summary"><div class="order-summary-head"><strong>รายการหนังสือ</strong><span>${BakkaUI.money(order.amount_due)} รวมส่งแล้ว</span></div><ul>${items}</ul><div class="order-summary-totals"><span>ยอดชำระทั้งหมด (รวมจัดส่ง)</span><strong>${BakkaUI.money(order.amount_due)}</strong></div></div>${action}</article>`;
+    const shipping = order.tracking_number
+      ? '<div class="order-shipping"><strong>ข้อมูลการจัดส่ง</strong><p>บริษัทขนส่ง: ' +
+        BakkaUI.escape(order.carrier || 'ไม่ระบุ') +
+        '</p><label>เลขติดตามพัสดุ<input class="tracking-number" readonly aria-label="เลขติดตามพัสดุ" value="' +
+        BakkaUI.escape(order.tracking_number) +
+        '"></label><small>คัดลอกเลขนี้ไปตรวจสอบกับบริษัทขนส่ง</small></div>'
+      : '';
+    const received =
+      order.status === 'shipped'
+        ? '<button type="button" class="button primary order-received" data-received="' +
+          BakkaUI.escape(order.order_id) +
+          '" data-number="' +
+          BakkaUI.escape(order.order_number) +
+          '">ได้รับสินค้าแล้ว</button>'
+        : '';
+    return `<article class="order-result"><div class="order-status-banner"><span class="order-status-dot"></span><div><strong>${BakkaUI.escape(statusLabels[order.status] || 'กำลังดำเนินการ')}</strong><small>${BakkaUI.escape(order.order_number)} · ${new Date(order.created_at).toLocaleDateString('th-TH')}</small></div></div><div class="order-summary"><div class="order-summary-head"><strong>รายการหนังสือ</strong><span>${BakkaUI.money(order.amount_due)} รวมส่งแล้ว</span></div><ul>${items}</ul><div class="order-summary-totals"><span>ยอดชำระทั้งหมด (รวมจัดส่ง)</span><strong>${BakkaUI.money(order.amount_due)}</strong></div></div>${shipping}${action}${received}</article>`;
   }
-  async function loadOrders() {
+  async function loadOrders(phoneOverride) {
     if (busy) return;
-    const phone = phoneField.value.trim();
+    const phone = typeof phoneOverride === 'string' ? phoneOverride : phoneField.value.trim();
     if (!phone) return showError('กรุณากรอกเบอร์โทรศัพท์ที่ใช้สั่งซื้อ');
     busy = true;
     showError();
@@ -79,7 +94,34 @@
     loadOrders();
   });
   $('refresh-orders').addEventListener('click', loadOrders);
-  orderList.addEventListener('click', (event) => {
+  orderList.addEventListener('click', async (event) => {
+    const receipt = event.target.closest('[data-received]');
+    if (receipt) {
+      if (
+        busy ||
+        receipt.disabled ||
+        !confirm('ได้รับหนังสือครบแล้ว และต้องการปิดคำสั่งซื้อนี้ใช่ไหม?')
+      )
+        return;
+      const phone = resultsPhone;
+      receipt.disabled = true;
+      receipt.textContent = 'กำลังบันทึก...';
+      try {
+        await BakkaStore.confirmOrderReceived(
+          receipt.dataset.received,
+          receipt.dataset.number,
+          phone,
+        );
+        BakkaUI.toast('ขอบคุณค่ะ ยืนยันรับสินค้าเรียบร้อยแล้ว');
+        phoneField.value = phone;
+        await loadOrders(phone);
+      } catch (error) {
+        showError(error.message);
+        receipt.disabled = false;
+        receipt.textContent = 'ได้รับสินค้าแล้ว';
+      }
+      return;
+    }
     const link = event.target.closest('[data-resume-order]');
     if (!link) return;
     BakkaStore.rememberOrder({

@@ -4,3 +4,11 @@ project_id = "bakkabook"
 # JWT validation happens inside the function via /auth/v1/user.
 # This also supports newer Supabase signing keys and publishable API keys.
 verify_jwt = false
+
+[functions.line-notify]
+# Server-to-server only: the function checks its dedicated notification secret.
+verify_jwt = false
+
+[functions.line-webhook]
+# LINE sends an HMAC signature, not a Supabase JWT. Verified inside the function.
+verify_jwt = false
