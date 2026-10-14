@@ -34,9 +34,9 @@
       ? `<a class="button secondary order-resume" href="payment.html?order=${encodeURIComponent(order.order_number)}" data-resume-order data-order-number="${BakkaUI.escape(order.order_number)}" data-order-id="${BakkaUI.escape(order.order_id)}" data-payment-method="${BakkaUI.escape(order.payment_method)}">${order.payment_method === 'qr' ? 'ไปหน้าชำระเงินด้วย QR' : 'ดูรายละเอียดการติดต่อ'}</a>`
       : '';
     const shipping = order.tracking_number
-      ? '<div class="order-shipping"><strong>ข้อมูลการจัดส่ง</strong><p>บริษัทขนส่ง: ' +
+      ? '<div class="order-shipping"><div class="order-shipping-head"><strong>ข้อมูลการจัดส่ง</strong><span>' +
         BakkaUI.escape(order.carrier || 'ไม่ระบุ') +
-        '</p><label>เลขติดตามพัสดุ<input class="tracking-number" readonly aria-label="เลขติดตามพัสดุ" value="' +
+        '</span></div><label>เลขติดตามพัสดุ<input class="tracking-number" readonly aria-label="เลขติดตามพัสดุ" value="' +
         BakkaUI.escape(order.tracking_number) +
         '"></label><small>คัดลอกเลขนี้ไปตรวจสอบกับบริษัทขนส่ง</small></div>'
       : '';
@@ -48,7 +48,7 @@
           BakkaUI.escape(order.order_number) +
           '">ได้รับสินค้าแล้ว</button>'
         : '';
-    return `<article class="order-result"><div class="order-status-banner"><span class="order-status-dot"></span><div><strong>${BakkaUI.escape(statusLabels[order.status] || 'กำลังดำเนินการ')}</strong><small>${BakkaUI.escape(order.order_number)} · ${new Date(order.created_at).toLocaleDateString('th-TH')}</small></div></div><div class="order-summary"><div class="order-summary-head"><strong>รายการหนังสือ</strong><span>${BakkaUI.money(order.amount_due)} รวมส่งแล้ว</span></div><ul>${items}</ul><div class="order-summary-totals"><span>ยอดชำระทั้งหมด (รวมจัดส่ง)</span><strong>${BakkaUI.money(order.amount_due)}</strong></div></div>${shipping}${action}${received}</article>`;
+    return `<article class="order-result"><div class="order-status-banner"><span class="order-status-dot"></span><div><strong>${BakkaUI.escape(statusLabels[order.status] || 'กำลังดำเนินการ')}</strong><small>${BakkaUI.escape(order.order_number)} · ${new Date(order.created_at).toLocaleDateString('th-TH')}</small></div></div><div class="order-summary"><div class="order-summary-head"><strong>รายการหนังสือ</strong><span>${BakkaUI.money(order.amount_due)} รวมส่งแล้ว</span></div><ul>${items}</ul><div class="order-summary-totals"><span>ยอดชำระทั้งหมด (รวมจัดส่ง)</span><strong>${BakkaUI.money(order.amount_due)}</strong></div></div>${shipping}${action || received ? `<div class="order-card-actions">${action}${received}</div>` : ''}</article>`;
   }
   async function loadOrders(phoneOverride) {
     if (busy) return;

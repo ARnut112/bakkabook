@@ -1,0 +1,526 @@
+/* Customer checkout and tracking: compact groups with readable controls. */
+.cart-main,
+.order-main {
+  padding-bottom: 36px;
+}
+.cart-main > .breadcrumb,
+.order-main > .breadcrumb {
+  padding: 18px 0;
+}
+.cart-main .cart-heading {
+  margin-bottom: 18px;
+  gap: 12px;
+}
+.cart-main .cart-heading h1 {
+  font-size: 28px;
+}
+.cart-main .cart-heading p {
+  margin: 4px 0 0;
+}
+.cart-main .cart-layout {
+  grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
+  gap: 18px;
+}
+.cart-main .cart-list-panel {
+  padding: 0 16px;
+}
+.cart-main .cart-item {
+  gap: 12px;
+  padding: 14px 0;
+  grid-template-columns: 60px minmax(0, 1fr) 74px 48px;
+}
+.cart-main .cart-item-info {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.cart-main .cart-item-info > span,
+.cart-main .stock-warning,
+.cart-main .cart-quantity,
+.cart-main .cart-remove {
+  font-size: 11px;
+}
+.cart-main .cart-quantity input {
+  width: 70px;
+  min-height: 40px;
+  font-size: 14px;
+}
+.cart-main .cart-remove {
+  min-height: 40px;
+  justify-content: center;
+}
+.cart-main .checkout-panel {
+  padding: 18px;
+}
+.checkout-guidance {
+  margin-top: 6px;
+}
+.checkout-guidance > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  color: var(--green);
+}
+.checkout-guidance > summary::-webkit-details-marker {
+  display: none;
+}
+.checkout-guidance > summary::after {
+  content: '+';
+  font-size: 20px;
+}
+.checkout-guidance[open] > summary::after {
+  content: '−';
+}
+.cart-main .checkout-steps {
+  margin: 0 0 10px;
+  padding-block: 9px;
+  font-size: 12px;
+}
+.cart-main .checkout-disclaimer {
+  padding: 9px 11px;
+  margin-bottom: 10px !important;
+  font-size: 11px !important;
+}
+.cart-main .cart-total {
+  margin-bottom: 14px;
+  padding: 11px 0;
+  gap: 12px;
+}
+.cart-main .checkout-panel form {
+  gap: 11px;
+}
+.checkout-field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.cart-main .field {
+  min-width: 0;
+  margin: 0;
+  gap: 5px;
+}
+.cart-main .field label,
+.cart-main .payment-choice legend {
+  font-size: 12px;
+}
+.cart-main .field input,
+.cart-main .field textarea {
+  min-height: 42px;
+  padding: 9px 11px;
+  font-size: 13px;
+}
+.cart-main .field textarea {
+  min-height: 76px;
+}
+.cart-main #customer-note {
+  min-height: 62px;
+}
+.cart-main .payment-choice {
+  gap: 7px;
+}
+.cart-main .payment-choice label {
+  padding: 10px 11px;
+  gap: 9px;
+}
+.cart-main .payment-choice label strong {
+  font-size: 12px;
+}
+.cart-main .payment-choice label small {
+  font-size: 11px;
+}
+.cart-main .consent-field {
+  align-items: flex-start;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.cart-main .consent-field input {
+  flex: 0 0 auto;
+  margin-top: 3px;
+}
+.cart-main .checkout-note {
+  font-size: 11px;
+}
+.order-main .payment-panel {
+  max-width: 800px;
+  margin: 10px auto 28px;
+  padding: 20px;
+}
+.order-main .payment-panel-heading {
+  margin-bottom: 14px;
+}
+.order-main .payment-panel-heading h1 {
+  font-size: 25px;
+}
+.order-main .payment-panel-heading p {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+.order-main .payment-order-card {
+  padding: 0;
+  border: 0;
+}
+.order-main .order-status-banner {
+  padding: 11px 12px;
+  gap: 9px;
+}
+.order-main .order-status-dot {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+}
+.order-main .order-status-banner strong {
+  font-size: 13px;
+}
+.order-main .order-status-banner small {
+  font-size: 11px;
+  margin-top: 3px;
+}
+.order-main .order-summary {
+  padding: 12px;
+  margin: 10px 0 0;
+}
+.order-main .order-summary-head {
+  align-items: flex-start;
+  padding-bottom: 8px;
+  font-size: 12px;
+}
+.order-main .order-summary-head > span {
+  text-align: right;
+  flex-shrink: 0;
+}
+.order-main .order-summary li {
+  align-items: flex-start;
+  font-size: 12px;
+}
+.order-main .order-summary li strong {
+  flex-shrink: 0;
+}
+.order-main .order-summary-totals {
+  font-size: 11px;
+  padding-top: 4px;
+}
+.order-main .order-payment {
+  padding: 14px;
+  margin-top: 12px;
+}
+.order-main .order-payment h2 {
+  font-size: 17px;
+}
+.order-main .order-payment > p,
+.order-main .contact-order-note p,
+.order-main .payment-prompt {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.order-main .qr-payment-card {
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  margin: 12px 0;
+  padding: 14px;
+}
+.order-main .qr-payment-card img {
+  width: 100%;
+  max-width: 240px;
+}
+.order-main .qr-payment-card small {
+  font-size: 12px;
+}
+.order-main .qr-payment-card strong {
+  font-size: 28px;
+  margin-top: 3px;
+}
+.order-main .slip-form {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px 12px;
+  margin-top: 12px;
+}
+.order-main .slip-form label,
+.order-main .slip-form small {
+  grid-column: 1/-1;
+}
+.order-main .slip-form input {
+  min-width: 0;
+  width: 100%;
+  padding: 6px 0;
+  font-size: 12px;
+}
+.order-main .slip-form small {
+  font-size: 11px;
+}
+.order-main .transaction-track-link {
+  min-height: 40px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.order-main .payment-thanks,
+.order-main .payment-missing {
+  padding: 26px 22px;
+  margin: 18px auto 26px;
+}
+.order-main .payment-thanks .eyebrow {
+  margin-bottom: 6px;
+}
+.order-main .payment-thanks p {
+  margin: 8px 0 16px;
+  line-height: 1.7;
+}
+.order-main .order-lookup {
+  max-width: 680px;
+  padding: 20px;
+  margin: 12px auto 18px;
+}
+.order-main .order-lookup-copy h1 {
+  font-size: 24px;
+}
+.order-main .order-lookup-copy > p {
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.order-main .order-lookup-form {
+  gap: 9px;
+}
+.order-main .order-lookup-form .field label {
+  font-size: 12px;
+}
+.order-main .order-lookup-form .field input {
+  min-height: 42px;
+  font-size: 14px;
+}
+.order-main .order-lookup-form .button {
+  min-height: 42px;
+  font-size: 12px;
+}
+.order-main .order-results,
+.order-main .order-back {
+  max-width: 800px;
+}
+.order-main .order-results-head {
+  min-height: 40px;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+.order-main .order-results-head p {
+  font-size: 11px;
+}
+.order-main .order-refresh {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-color: transparent;
+  background: transparent;
+  font-size: 22px;
+}
+.order-main .order-refresh:hover {
+  background: #eef1e8;
+}
+.order-main .order-results > #order-list {
+  gap: 10px;
+}
+.order-main .order-result {
+  padding: 12px;
+}
+.order-main .order-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+.order-main .order-card-actions .button {
+  min-height: 42px;
+  padding: 9px 14px;
+  margin: 0;
+  font-size: 12px;
+}
+.order-main .order-shipping {
+  padding: 12px;
+  margin-top: 10px;
+}
+.order-shipping-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 9px;
+  font-size: 12px;
+}
+.order-shipping-head > span {
+  text-align: right;
+  color: var(--muted);
+}
+.order-main .tracking-number {
+  min-height: 42px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+.order-main .order-shipping small {
+  margin-top: 5px;
+  font-size: 11px;
+}
+.order-main .order-history > summary {
+  padding: 13px 2px;
+  min-height: 44px;
+  font-size: 13px;
+}
+.order-main .order-history > .order-result + .order-result {
+  margin-top: 10px;
+}
+.order-main .order-back {
+  margin-top: 14px;
+}
+@media (max-width: 960px) {
+  .cart-main .cart-layout {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 650px) {
+  .cart-main,
+  .order-main {
+    padding-bottom: 24px;
+  }
+  .cart-main > .breadcrumb,
+  .order-main > .breadcrumb {
+    padding: 13px 0;
+  }
+  .cart-main .cart-heading {
+    gap: 5px;
+    margin-bottom: 12px;
+  }
+  .cart-main .cart-heading h1 {
+    font-size: 25px;
+  }
+  .cart-main .cart-heading > .text-link {
+    min-height: 36px;
+  }
+  .cart-main .cart-heading p {
+    font-size: 12px;
+  }
+  .cart-main .cart-item {
+    grid-template-columns: 48px minmax(0, 1fr) 64px;
+    gap: 8px 10px;
+    padding: 12px 0;
+  }
+  .cart-main .cart-item > a {
+    grid-row: 1 / 3;
+  }
+  .cart-main .cart-item-info {
+    font-size: 13px;
+  }
+  .cart-main .cart-quantity input {
+    width: 64px;
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .cart-main .cart-remove {
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: stretch;
+    min-height: 36px;
+  }
+  .cart-main .checkout-panel {
+    padding: 15px;
+  }
+  .checkout-field-row {
+    grid-template-columns: 1fr;
+    gap: 11px;
+  }
+  .checkout-guidance > summary,
+  .cart-main .consent-field {
+    min-height: 44px;
+  }
+  .cart-main .field input,
+  .cart-main .field textarea,
+  .order-main .order-lookup-form .field input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .cart-main .consent-field,
+  .cart-main .payment-choice label small {
+    font-size: 12px;
+  }
+  .cart-main .payment-choice label {
+    padding: 11px;
+  }
+  .cart-main .payment-choice label strong {
+    font-size: 13px;
+  }
+  .order-main .order-lookup,
+  .order-main .payment-panel {
+    padding: 15px;
+    margin: 8px auto 14px;
+  }
+  .order-main .order-lookup-copy h1,
+  .order-main .payment-panel-heading h1 {
+    font-size: 23px;
+  }
+  .order-main .order-lookup-form .button,
+  .order-main .order-refresh,
+  .order-main .order-card-actions .button {
+    min-height: 44px;
+  }
+  .order-main .order-refresh {
+    width: 44px;
+    height: 44px;
+  }
+  .order-main .order-result {
+    padding: 10px;
+  }
+  .order-main .order-status-banner strong {
+    font-size: 13px;
+  }
+  .order-main .order-summary,
+  .order-main .order-shipping,
+  .order-main .order-payment {
+    padding: 11px;
+  }
+  .order-main .order-summary-head {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .order-main .order-summary-head > span {
+    margin-left: auto;
+  }
+  .order-main .qr-payment-card {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 12px;
+  }
+  .order-main .qr-payment-card img {
+    max-width: 220px;
+  }
+  .order-main .qr-payment-card strong {
+    font-size: 26px;
+  }
+  .order-main .slip-form {
+    grid-template-columns: 1fr;
+  }
+  .order-main .slip-form label,
+  .order-main .slip-form small {
+    grid-column: auto;
+  }
+  .order-main .slip-form .button {
+    width: 100%;
+  }
+  .order-main .order-card-actions .button {
+    flex: 1 1 auto;
+  }
+  .order-main .tracking-number {
+    min-height: 44px;
+    font-size: 16px;
+  }
+  .order-main .payment-thanks,
+  .order-main .payment-missing {
+    padding: 22px 16px;
+  }
+  .order-main .payment-thanks h1 {
+    font-size: 21px;
+  }
+}

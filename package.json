@@ -8,6 +8,7 @@
     "build": "node tools/build.mjs",
     "test": "node --test tests/*.test.cjs",
     "test:browser": "node tests/browser.cjs",
+    "test:layout": "node tests/layout-browser.cjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

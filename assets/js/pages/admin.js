@@ -70,7 +70,7 @@
     $('book-table-body').innerHTML = results
       .map(
         (book) =>
-          `<tr><td><div class="table-book"><img src="${escape(imageUrl(book.images?.[0]))}" alt=""><div><strong>${escape(book.title)}</strong><span>${escape(book.author)}</span></div></div></td><td><span class="table-category">${escape(book.category)}</span></td><td><strong>${money(book.price)}</strong></td><td>${book.stock}</td><td><span class="status-chip ${book.status === 'draft' ? 'draft' : ''}">${book.status === 'draft' ? 'ฉบับร่าง' : 'เผยแพร่แล้ว'}</span></td><td><div class="row-actions"><a class="icon-button" href="product.html?id=${encodeURIComponent(book.id)}&preview=1" aria-label="ดู ${escape(book.title)}">${icon('book')}</a><button class="icon-button" data-edit="${escape(book.id)}" aria-label="แก้ไข ${escape(book.title)}">${icon('edit')}</button><button class="icon-button danger" data-delete="${escape(book.id)}" aria-label="ลบ ${escape(book.title)}">${icon('trash')}</button></div></td></tr>`,
+          `<tr><td class="book-cell-title"><div class="table-book"><img src="${escape(imageUrl(book.images?.[0]))}" alt=""><div><strong>${escape(book.title)}</strong><span>${escape(book.author)}</span></div></div></td><td class="book-cell-category"><span class="table-category">${escape(book.category)}</span></td><td class="book-cell-price" data-label="ราคา"><strong>${money(book.price)}</strong></td><td class="book-cell-stock" data-label="สต็อก">${book.stock} เล่ม</td><td class="book-cell-status"><span class="status-chip ${book.status === 'draft' ? 'draft' : ''}">${book.status === 'draft' ? 'ฉบับร่าง' : 'เผยแพร่แล้ว'}</span></td><td class="book-cell-actions"><div class="row-actions"><a class="icon-button" href="product.html?id=${encodeURIComponent(book.id)}&preview=1" aria-label="ดู ${escape(book.title)}">${icon('book')}</a><button class="icon-button" data-edit="${escape(book.id)}" aria-label="แก้ไข ${escape(book.title)}">${icon('edit')}</button><button class="icon-button danger" data-delete="${escape(book.id)}" aria-label="ลบ ${escape(book.title)}">${icon('trash')}</button></div></td></tr>`,
       )
       .join('');
     $('table-count').textContent = `แสดง ${results.length} จาก ${books.length} รายการ`;
@@ -113,6 +113,7 @@
       const preview = $('payment-qr-preview');
       preview.src = data.qr_image_url || '';
       preview.hidden = !data.qr_image_url;
+      $('payment-qr-status').textContent = data.qr_image_url ? 'ตั้งค่าแล้ว' : 'ยังไม่ได้เพิ่ม QR';
       $('payment-settings-message').textContent = data.qr_image_url
         ? 'ตั้งค่า QR แล้ว'
         : 'ยังไม่ได้เพิ่ม QR';
@@ -120,8 +121,51 @@
       $('payment-settings-message').textContent = 'โหลดการตั้งค่าไม่ได้: ' + error.message;
     }
   }
+  // Keep the status and shipping controls together; secondary details can fold away on mobile.
+  function renderOrder(order) {
+    const id = escape(order.id);
+    const locked = ['cancelled', 'completed'].includes(order.status);
+    const shippingVisible = order.status === 'shipped';
+    const items = order.order_items || [];
+    const itemCount = items.reduce((sum, item) => sum + Number(item.quantity), 0);
+    const total = money(Number(order.total) + Number(order.shipping_fee || 0));
+    return `<article class="admin-order-card" data-order-row="${id}">
+      <header class="admin-order-head">
+        <div><strong class="admin-order-number">${escape(order.order_number)}</strong><time datetime="${escape(order.created_at)}">${new Date(order.created_at).toLocaleString('th-TH')}</time></div>
+        <span class="status-chip ${locked ? 'closed' : ''}">${escape(orderStatuses[order.status] || order.status)}</span>
+      </header>
+      <div class="admin-order-overview">
+        <div><strong>${escape(order.customer_name)}</strong><p>${items.length ? escape(items[0].book_title) + (items.length > 1 ? ` และอีก ${items.length - 1} รายการ` : '') : 'รายการหนังสือ'} <span>· ${itemCount} เล่ม</span></p></div>
+        <div class="admin-order-total"><strong>${total}</strong><small>${Number(order.shipping_fee || 0) > 0 ? 'รวมค่าส่ง ' + money(order.shipping_fee) : 'รวมจัดส่งแล้ว'}</small></div>
+      </div>
+      ${
+        locked
+          ? ''
+          : `<div class="admin-order-workflow">
+        <div class="admin-order-status-field"><label for="order-status-${id}">สถานะคำสั่งซื้อ</label><select id="order-status-${id}" data-order-status="${id}">${Object.entries(
+          orderStatuses,
+        )
+          .map(
+            ([value, label]) =>
+              `<option value="${value}" ${value === order.status ? 'selected' : ''} ${value === 'completed' && !['confirmed', 'shipped'].includes(order.status) ? 'disabled' : ''}>${label}</option>`,
+          )
+          .join('')}</select></div>
+        <button class="button primary order-save" data-save-order="${id}" data-shipping-fee="${Number(order.shipping_fee || 0)}">บันทึกสถานะ</button>
+        <div class="shipping-fields" data-shipping-fields ${shippingVisible ? '' : 'hidden'}>
+          <label for="order-carrier-${id}">บริษัทขนส่ง<input id="order-carrier-${id}" data-carrier list="shipping-carriers" maxlength="80" placeholder="เลือกหรือพิมพ์บริษัทขนส่ง" value="${escape(order.carrier || '')}" autocomplete="off"></label>
+          <label for="order-tracking-${id}">เลขพัสดุ<input id="order-tracking-${id}" data-tracking maxlength="100" placeholder="เช่น TH123456789" value="${escape(order.tracking_number || '')}" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+        </div>
+      </div>`
+      }
+      <div class="admin-order-links"><span>${order.payment_method === 'qr' ? 'ชำระผ่าน QR' : 'ติดต่อร้านเพื่อชำระ'}</span>${order.slipUrl ? `<a class="order-proof-link" href="${escape(order.slipUrl)}" target="_blank" rel="noopener">${icon('image')}เปิดดูสลิป</a>` : ''}${order.carrier || order.tracking_number ? `<span class="admin-shipping-summary">${escape(order.carrier || '')} ${escape(order.tracking_number || '')}</span>` : ''}</div>
+      <details class="admin-order-details"><summary>รายละเอียดหนังสือและที่อยู่จัดส่ง <span aria-hidden="true">⌄</span></summary>
+        <div class="admin-order-detail-grid"><div class="order-customer"><strong>${escape(order.customer_name)}</strong><a href="tel:${escape(order.phone)}">${escape(order.phone)}</a>${order.line_id ? `<span>LINE/Facebook: ${escape(order.line_id)}</span>` : ''}<span>${escape(order.address)}</span>${order.note ? `<span>หมายเหตุ: ${escape(order.note)}</span>` : ''}</div><ul class="admin-order-items">${items.map((item) => `<li><span>${escape(item.book_title)} × ${item.quantity}</span><strong>${money(item.unit_price * item.quantity)}</strong></li>`).join('')}</ul></div>
+      </details>
+    </article>`;
+  }
   async function loadOrders() {
     const version = ++orderLoadVersion;
+    $('refresh-orders').setAttribute('aria-busy', 'true');
     showError('orders-error', '');
     $('orders-table-body').innerHTML = '';
     $('orders-empty').hidden = true;
@@ -141,24 +185,12 @@
       orders = loadedOrders;
       $('orders-count').textContent = `${orders.length} รายการ`;
       $('orders-empty').hidden = orders.length > 0;
-      $('orders-table-body').innerHTML = orders
-        .map(
-          (order) =>
-            `<tr data-order-row="${escape(order.id)}"><td><strong>${escape(order.order_number)}</strong><br><span>${new Date(order.created_at).toLocaleString('th-TH')}</span></td><td><div class="order-customer"><strong>${escape(order.customer_name)}</strong><a href="tel:${escape(order.phone)}">${escape(order.phone)}</a>${order.line_id ? `<span>LINE/Facebook: ${escape(order.line_id)}</span>` : ''}<span>${escape(order.address)}</span>${order.note ? `<span>หมายเหตุ: ${escape(order.note)}</span>` : ''}</div></td><td><div class="order-item-list">${(order.order_items || []).map((item) => `${escape(item.book_title)} × ${item.quantity} · ${money(item.unit_price * item.quantity)}`).join('<br>')}</div></td><td><strong>${money(Number(order.total) + Number(order.shipping_fee || 0))}</strong><br><small>${Number(order.shipping_fee || 0) > 0 ? 'รวมค่าส่ง ' + money(order.shipping_fee) : 'รวมค่าจัดส่งแล้ว'}</small></td><td><span>${order.payment_method === 'qr' ? 'โอน QR' : 'ติดต่อร้าน'}</span>${order.slipUrl ? `<br><a class="order-proof-link" href="${escape(order.slipUrl)}" target="_blank" rel="noopener">เปิดดูสลิป</a>` : ''}</td><td><label class="sr-only" for="order-status-${escape(order.id)}">สถานะ ${escape(order.order_number)}</label><select id="order-status-${escape(order.id)}" data-order-status="${escape(order.id)}" ${['cancelled', 'completed'].includes(order.status) ? 'disabled' : ''}>${Object.entries(
-              orderStatuses,
-            )
-              .map(
-                ([value, label]) =>
-                  `<option value="${value}" ${value === order.status ? 'selected' : ''} ${value === 'completed' && !['confirmed', 'shipped'].includes(order.status) ? 'disabled' : ''}>${label}</option>`,
-              )
-              .join(
-                '',
-              )}</select><div class="shipping-fields"><label>บริษัทขนส่ง<input data-carrier maxlength="80" placeholder="เช่น ไปรษณีย์ไทย, Flash" value="${escape(order.carrier || '')}" ${['cancelled', 'completed'].includes(order.status) ? 'disabled' : ''}></label><label>เลขพัสดุ<input data-tracking maxlength="100" placeholder="กรอกก่อนบันทึกจัดส่ง" value="${escape(order.tracking_number || '')}" ${['cancelled', 'completed'].includes(order.status) ? 'disabled' : ''}></label></div></td><td><button class="button secondary order-save" data-save-order="${escape(order.id)}" data-shipping-fee="${Number(order.shipping_fee || 0)}" ${['cancelled', 'completed'].includes(order.status) ? 'disabled' : ''}>บันทึกสถานะ</button></td></tr>`,
-        )
-        .join('');
+      $('orders-table-body').innerHTML = orders.map(renderOrder).join('');
     } catch (error) {
       if (version === orderLoadVersion)
         showError('orders-error', 'โหลดคำสั่งซื้อไม่สำเร็จ: ' + error.message);
+    } finally {
+      if (version === orderLoadVersion) $('refresh-orders').setAttribute('aria-busy', 'false');
     }
   }
   // The editor keeps unsaved changes and compressed images local until submission.
@@ -306,7 +338,9 @@
   $('orders-table-body').addEventListener('change', (event) => {
     const select = event.target.closest('[data-order-status]');
     if (!select) return;
-    const saveButton = select.closest('tr').querySelector('[data-save-order]');
+    const row = select.closest('[data-order-row]');
+    const saveButton = row.querySelector('[data-save-order]');
+    row.querySelector('[data-shipping-fields]').hidden = select.value !== 'shipped';
     if (saveButton)
       saveButton.textContent = select.value === 'completed' ? 'ปิดคำสั่งซื้อ' : 'บันทึกสถานะ';
   });
@@ -324,6 +358,7 @@
       const url = await BakkaStore.savePaymentQr(file);
       $('payment-qr-preview').src = url;
       $('payment-qr-preview').hidden = false;
+      $('payment-qr-status').textContent = 'ตั้งค่าแล้ว';
       $('payment-qr-file').value = '';
       $('payment-settings-message').textContent = 'บันทึก QR แล้ว';
       toast('ตั้งค่า QR รับชำระแล้ว');
@@ -387,7 +422,7 @@
       );
       saveOrder.disabled = true;
       saveOrder.textContent = 'กำลังบันทึก...';
-      const row = saveOrder.closest('tr');
+      const row = saveOrder.closest('[data-order-row]');
       const saving =
         select.value === 'shipped'
           ? BakkaStore.saveOrderShipping(
@@ -416,7 +451,7 @@
         })
         .finally(() => {
           saveOrder.disabled = false;
-          saveOrder.textContent = 'ดำเนินการต่อ';
+          saveOrder.textContent = select.value === 'completed' ? 'ปิดคำสั่งซื้อ' : 'บันทึกสถานะ';
         });
     }
     if (event.target.closest('#apply-ai') && suggestion) {

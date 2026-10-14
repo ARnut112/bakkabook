@@ -1,0 +1,557 @@
+/* Compact shared layout: keep visual space modest and interactive controls usable. */
+.header-inner {
+  min-height: 80px;
+  gap: 20px;
+}
+.announcement {
+  padding-block: 6px;
+}
+.main-nav {
+  gap: 24px;
+}
+.header-actions {
+  gap: 12px;
+}
+.breadcrumb {
+  padding-block: 18px;
+  gap: 10px;
+}
+.button {
+  min-height: 44px;
+  gap: 8px;
+  padding: 10px 16px;
+}
+.hero {
+  min-height: 400px;
+  padding-block: 24px;
+  gap: 24px;
+}
+.hero-eyebrow {
+  margin-bottom: 14px;
+}
+.hero h1 {
+  margin-bottom: 12px;
+  font-size: clamp(32px, 3.2vw, 46px);
+  line-height: 1.4;
+}
+.hero-copy > p {
+  line-height: 1.75;
+}
+.hero-button {
+  margin-top: 18px;
+}
+.hero-art {
+  width: 100%;
+  max-width: 440px;
+  height: 340px;
+  margin-inline: auto;
+}
+.hero-art .book-center {
+  top: 45px;
+}
+.hero-art .book-left {
+  top: 88px;
+}
+.hero-art .book-right {
+  top: 76px;
+}
+.hero-art .art-seal {
+  right: 0;
+  width: 80px;
+  height: 80px;
+  font-size: 12px;
+}
+.section-space {
+  padding-block: 32px;
+}
+.section-heading {
+  margin-bottom: 16px;
+  gap: 14px;
+}
+.section-heading h2 {
+  margin-top: 4px;
+  font-size: 27px;
+}
+.collection-toolbar {
+  gap: 12px;
+  margin-top: 0;
+}
+.collection-toolbar .search-box {
+  max-width: 520px;
+}
+.search-box input {
+  padding-block: 11px;
+  min-height: 44px;
+  font-size: 14px;
+}
+.sort-field select {
+  min-height: 44px;
+  padding-block: 9px;
+  font-size: 13px;
+}
+.category-row {
+  gap: 12px;
+  margin-block: 14px 18px;
+}
+.category-chip {
+  min-height: 38px;
+  padding: 7px 14px;
+  font-size: 12px;
+}
+.book-grid {
+  gap: 24px 18px;
+}
+.book-cover-area {
+  height: 254px;
+}
+.book-cover-area > a {
+  padding: 28px 30px 24px;
+}
+.book-cover-area img {
+  max-height: 202px;
+}
+.book-card-info {
+  padding-top: 10px;
+}
+.book-card h3 {
+  margin-block: 4px;
+  overflow-wrap: anywhere;
+}
+.book-card-info > p {
+  font-size: 12px;
+}
+.book-card-bottom {
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.book-card-bottom .availability {
+  flex: 1;
+  font-size: 10px;
+}
+.load-more-wrap {
+  margin-top: 24px;
+}
+.story-section {
+  margin-bottom: 20px;
+}
+.story-copy {
+  padding: 28px 32px;
+}
+.story-art {
+  min-height: 280px;
+}
+.closing-note {
+  padding-block: 20px 36px;
+}
+.closing-note p {
+  font-size: 20px;
+}
+.closing-note small {
+  margin-top: 12px;
+}
+.site-footer {
+  padding-top: 28px;
+}
+.footer-top {
+  gap: 18px;
+  padding-bottom: 22px;
+}
+.empty-state {
+  padding-block: 36px;
+}
+
+/* Place the purchase action before the longer description on the product page. */
+.product-layout {
+  gap: 32px;
+  padding-top: 0;
+}
+.product-image-stage {
+  min-height: 420px;
+  padding: 22px;
+  gap: 16px;
+}
+.product-image-stage > img {
+  height: 300px;
+}
+.gallery-thumbnails {
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.product-info h1 {
+  font-size: 30px;
+}
+.product-badges {
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.product-subtitle {
+  margin-top: 6px;
+}
+.product-subtitle:empty {
+  display: none;
+}
+.product-author {
+  margin-top: 10px;
+  font-size: 13px;
+}
+.product-price-row {
+  padding-block: 14px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.product-price > strong {
+  font-size: 28px;
+}
+.product-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 0;
+}
+.product-actions .primary {
+  grid-column: 1 / -1;
+}
+.product-actions .button {
+  min-width: 0;
+  padding-inline: 10px;
+  font-size: 13px;
+}
+.product-action-note {
+  margin-block: 8px 16px;
+  font-size: 12px;
+}
+.product-description h2,
+.book-details h2 {
+  margin-bottom: 8px;
+}
+.product-description p {
+  font-size: 14px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.book-details {
+  padding-top: 16px;
+  margin-top: 16px;
+}
+.book-details dl {
+  gap: 10px 16px;
+  font-size: 13px;
+}
+.product-main .section-space {
+  margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    min-height: 340px;
+    gap: 16px;
+  }
+  .hero-art {
+    height: 300px;
+  }
+  .hero-art .art-seal {
+    width: 64px;
+    height: 64px;
+    font-size: 10px;
+  }
+  .book-cover-area {
+    height: 236px;
+  }
+  .book-cover-area img {
+    max-height: 184px;
+  }
+  .product-layout {
+    gap: 24px;
+  }
+  .product-image-stage {
+    min-height: 350px;
+    padding: 16px;
+  }
+  .product-image-stage > img {
+    height: 250px;
+  }
+}
+
+@media (max-width: 650px) {
+  .container {
+    width: calc(100% - 28px);
+  }
+  .header-inner {
+    min-height: 0;
+    padding-top: 12px;
+    gap: 0;
+  }
+  .header-inner .brand {
+    font-size: 24px;
+    gap: 7px;
+  }
+  .header-actions {
+    gap: 4px;
+  }
+  .header-actions .icon-button {
+    width: 40px;
+    height: 44px;
+  }
+  .header-actions .admin-link {
+    min-height: 44px;
+    padding-left: 8px;
+  }
+  .main-nav {
+    gap: clamp(12px, 4vw, 24px);
+    margin-top: 4px;
+    padding-bottom: 2px;
+    font-size: 12px;
+  }
+  .main-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding-block: 8px;
+  }
+  .breadcrumb {
+    padding-block: 14px;
+    font-size: 12px;
+    gap: 8px;
+  }
+  .hero {
+    padding-block: 20px 8px;
+    gap: 12px;
+    min-height: 0;
+  }
+  .hero h1 {
+    font-size: 32px;
+    margin-bottom: 8px;
+  }
+  .hero-eyebrow {
+    margin-bottom: 10px;
+  }
+  .hero-copy > p {
+    font-size: 13px;
+  }
+  .hero-button {
+    margin-top: 12px;
+  }
+  .hero-art {
+    height: 218px;
+    max-width: 250px;
+  }
+  .hero-art .book-center {
+    top: 30px;
+  }
+  .hero-art .book-left {
+    top: 65px;
+  }
+  .hero-art .book-right {
+    top: 55px;
+  }
+  .hero-art .art-seal {
+    width: 55px;
+    height: 55px;
+    font-size: 9px;
+  }
+  .hero-art .star-one {
+    top: 25px;
+    font-size: 30px;
+  }
+  .hero-art .book-shelf {
+    bottom: 20px;
+  }
+  .art-bottom-caption {
+    font-size: 5px;
+    letter-spacing: 1.3px;
+  }
+  .section-space {
+    padding-block: 24px;
+  }
+  .section-heading h2 {
+    font-size: 25px;
+  }
+  .collection-toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 128px;
+    gap: 8px;
+  }
+  .collection-toolbar .search-box {
+    min-width: 0;
+    padding-inline: 10px;
+  }
+  .collection-toolbar .search-box input,
+  .sort-field select {
+    font-size: 16px;
+  }
+  .sort-field select {
+    width: 100%;
+    max-width: none;
+    padding-inline: 6px;
+    font-size: 13px;
+  }
+  .category-row {
+    gap: 8px;
+    margin-block: 10px 14px;
+  }
+  .category-chips {
+    width: 100%;
+    max-width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    gap: 6px;
+  }
+  .category-chip {
+    min-height: 44px;
+    flex-shrink: 0;
+    padding-inline: 12px;
+  }
+  .book-grid {
+    gap: 18px 12px;
+  }
+  .book-cover-area {
+    height: 210px;
+  }
+  .book-cover-area > a {
+    padding: 30px 16px 20px;
+  }
+  .book-cover-area img {
+    max-height: 160px;
+  }
+  .book-cover-area .save-book {
+    width: 40px;
+    height: 40px;
+    right: 5px;
+    top: 5px;
+  }
+  .book-card h3 {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .book-card-bottom {
+    gap: 6px;
+  }
+  .book-card-bottom > strong {
+    width: 100%;
+    font-size: 17px;
+  }
+  .book-card-bottom .availability {
+    min-width: 0;
+    font-size: 10px;
+  }
+  .book-card .card-add-cart,
+  .book-card .card-arrow {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+  }
+  .book-card .card-arrow {
+    margin-left: auto;
+  }
+  .product-layout {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .product-image-stage {
+    min-height: 300px;
+    gap: 10px;
+  }
+  .product-image-stage > img {
+    height: 225px;
+  }
+  .product-info h1 {
+    font-size: 26px;
+    line-height: 1.5;
+  }
+  .product-actions .button {
+    min-height: 44px;
+    font-size: 13px;
+  }
+  .gallery-thumbnails > span {
+    margin-left: 0;
+  }
+  .book-details dl {
+    grid-template-columns: 1fr 1fr;
+    font-size: 12px;
+  }
+  .story-section {
+    grid-template-columns: 1fr;
+    margin-bottom: 14px;
+  }
+  .story-art {
+    min-height: 190px;
+  }
+  .story-art .reading-sun {
+    width: 145px;
+    height: 145px;
+    top: 18px;
+  }
+  .story-art .drawn-book {
+    top: 44px;
+    width: 90px;
+    height: 120px;
+    left: calc(50% - 40px);
+  }
+  .story-art .drawn-book span {
+    font-size: 48px;
+  }
+  .story-art .story-star {
+    top: 68px;
+    font-size: 42px;
+  }
+  .story-art-caption {
+    bottom: 12px;
+    font-size: 7px;
+  }
+  .story-copy {
+    padding: 20px;
+  }
+  .story-copy h2 {
+    font-size: 23px;
+    margin-block: 8px 12px;
+  }
+  .story-copy p {
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  .closing-note {
+    padding-block: 16px 28px;
+  }
+  .footer-top {
+    gap: 14px;
+    padding-bottom: 18px;
+  }
+  .footer-top p {
+    font-size: 12px;
+  }
+  .footer-bottom {
+    padding-block: 12px;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 370px) {
+  .header-inner .brand {
+    font-size: 21px;
+  }
+  .header-actions .admin-link span {
+    display: none;
+  }
+  .book-cover-area {
+    height: 190px;
+  }
+  .book-cover-area img {
+    max-height: 140px;
+  }
+  .book-details dl {
+    grid-template-columns: 1fr;
+  }
+  .collection-toolbar {
+    grid-template-columns: 1fr;
+  }
+  .sort-field {
+    justify-content: flex-end;
+  }
+  .sort-field select {
+    width: auto;
+  }
+}

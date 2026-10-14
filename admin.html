@@ -167,51 +167,65 @@
               <h1>คำสั่งซื้อจากลูกค้า</h1>
               <p>ตรวจสลิป อัปเดตสถานะ และปิดรายการเมื่อลูกค้าได้รับสินค้า</p>
             </div>
-            <button class="button secondary" id="refresh-orders">
-              <span class="refresh-glyph" aria-hidden="true">↻</span>รีเฟรชรายการ
+            <button
+              class="icon-button admin-refresh"
+              id="refresh-orders"
+              aria-label="รีเฟรชรายการคำสั่งซื้อ"
+              title="รีเฟรชรายการคำสั่งซื้อ"
+            >
+              <span class="refresh-glyph" aria-hidden="true">↻</span>
             </button>
           </div>
           <p id="orders-error" class="form-error" role="alert" hidden></p>
-          <section class="payment-settings">
-            <h2>QR สำหรับรับชำระ</h2>
-            <p>เพิ่มรูป QR บัญชีร้าน ลูกค้าจะเห็นเมื่อลูกค้าเลือกชำระผ่าน QR</p>
-            <div class="payment-settings-controls">
-              <img id="payment-qr-preview" alt="QR ปัจจุบัน" hidden /><input
-                id="payment-qr-file"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-              /><button type="button" class="button secondary" id="save-payment-qr">
-                บันทึก QR</button
-              ><span
-                id="payment-settings-message"
-                class="payment-settings-message"
-                role="status"
-              ></span>
+          <details class="payment-settings" id="payment-settings">
+            <summary>
+              <span
+                ><strong>QR สำหรับรับชำระ</strong
+                ><small id="payment-qr-status">ตั้งค่า QR ของร้าน</small></span
+              >
+              <span class="payment-settings-toggle"
+                >แก้ไข QR <span aria-hidden="true">⌄</span></span
+              >
+            </summary>
+            <div class="payment-settings-body">
+              <p>เพิ่มรูป QR บัญชีร้าน ลูกค้าจะเห็นเมื่อลูกค้าเลือกชำระผ่าน QR</p>
+              <div class="payment-settings-controls">
+                <img id="payment-qr-preview" alt="QR ปัจจุบัน" hidden />
+                <div class="payment-qr-upload">
+                  <label for="payment-qr-file">เลือกรูป QR ใหม่</label
+                  ><input
+                    id="payment-qr-file"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                  />
+                </div>
+                <button type="button" class="button secondary" id="save-payment-qr">
+                  บันทึก QR</button
+                ><span
+                  id="payment-settings-message"
+                  class="payment-settings-message"
+                  role="status"
+                ></span>
+              </div>
             </div>
-          </section>
-          <div class="admin-table-panel">
+          </details>
+          <div class="admin-table-panel admin-orders-panel">
             <div class="table-toolbar">
               <h2>รายการสั่งซื้อ</h2>
               <span id="orders-count" class="result-count"></span>
             </div>
-            <div class="table-scroll">
-              <table class="book-table order-table">
-                <thead>
-                  <tr>
-                    <th>เลขที่ / วันที่</th>
-                    <th>ผู้รับและที่อยู่</th>
-                    <th>หนังสือ</th>
-                    <th>ยอด / ค่าส่ง</th>
-                    <th>ชำระ / สลิป</th>
-                    <th>สถานะ</th>
-                    <th>บันทึก</th>
-                  </tr>
-                </thead>
-                <tbody id="orders-table-body"></tbody>
-              </table>
-            </div>
+            <div id="orders-table-body" class="admin-orders-list" aria-live="polite"></div>
             <div id="orders-empty" class="order-empty" hidden>ยังไม่มีคำสั่งซื้อเข้ามา</div>
           </div>
+          <datalist id="shipping-carriers">
+            <option value="ไปรษณีย์ไทย"></option>
+            <option value="Flash Express"></option>
+            <option value="J&T Express"></option>
+            <option value="KEX"></option>
+            <option value="SPX Express"></option>
+            <option value="DHL"></option>
+            <option value="ขนส่งอื่น ๆ"></option>
+          </datalist>
         </section>
         <section id="editor" hidden>
           <div class="editor-heading">

@@ -13,6 +13,9 @@
 | ข้อมูล, localStorage, Supabase, Auth, คำสั่งซื้อ และเรียก AI | `assets/js/services/store.js`                   |
 | การทำงานของแต่ละหน้า                                         | `assets/js/pages/`                              |
 | รูปแบบพื้นฐานและส่วนร่วม                                     | `assets/css/base/site.css`                      |
+| ระยะห่างและการจัดวางหน้าร้าน/สินค้าแบบกระชับ                 | `assets/css/layout.css`                         |
+| ตะกร้า ชำระเงิน และติดตามแบบกระชับ                           | `assets/css/pages/customer-compact.css`         |
+| หลังร้านและออเดอร์แบบการ์ด                                   | `assets/css/pages/admin-compact.css`            |
 | รูปแบบเฉพาะหน้า                                              | `assets/css/pages/`                             |
 | การจัดวางมือถือและแท็บเล็ต                                   | `assets/css/responsive.css`                     |
 | ลำดับรวม CSS สำหรับ source                                   | `assets/css/style.css`                          |
@@ -26,7 +29,7 @@
 
 หน้า HTML โหลดสคริปต์แบบ `defer` ตามลำดับ: `config.js` → ข้อมูลตัวอย่าง → configuration → store → common → สคริปต์ของหน้า สคริปต์ยังแชร์ `BAKKA_CONFIG`, `BAKKA_SEED`, `BAKKA_CATEGORIES`, `BakkaStore` และ `BakkaUI` ตามเดิม หากเพิ่มไฟล์ที่พึ่งพาส่วนอื่น ให้ใส่หลังไฟล์นั้น
 
-CSS source เริ่มจาก `style.css` แล้วนำเข้า `base/site.css` → `pages/product.css` → `pages/admin.css` → `responsive.css` → `pages/cart.css` → `pages/orders.css` ตามลำดับกฎเดิม ลำดับมีผลต่อกฎที่เขียนทับกัน จึงไม่ควรเรียงใหม่เพียงเพื่อจัดชื่อให้เป็นหมวด
+CSS source เริ่มจาก `style.css` แล้วนำเข้า `base/site.css` → `pages/product.css` → `pages/admin.css` → `responsive.css` → `pages/cart.css` → `pages/orders.css` ตามลำดับกฎเดิม จากนั้นใช้ `layout.css` → `pages/customer-compact.css` → `pages/admin-compact.css` สำหรับระยะและการจัดวางแบบกระชับ ลำดับมีผลต่อกฎที่เขียนทับกัน จึงไม่ควรเรียงใหม่เพียงเพื่อจัดชื่อให้เป็นหมวด
 
 ## ขั้นตอนก่อนส่งขึ้นเว็บ
 
@@ -41,6 +44,8 @@ npm run build
 ใช้ `npm.cmd` แทน `npm` หาก PowerShell บล็อกสคริปต์ของ npm `npm ci` ต้องทำเมื่อตั้งเครื่องใหม่หรือ lockfile เปลี่ยน เครื่องมือพัฒนาอยู่ใน `devDependencies` จึงต้องติดตั้งส่วนนี้ก่อน build
 
 หากมี Playwright และ Chromium/Edge ให้รัน `npm run test:browser` เพิ่มเติมเพื่อตรวจหน้าเว็บและขนาดหน้าจอ กำหนด `PLAYWRIGHT_PATH` และ `BROWSER_PATH` ได้ตามคำอธิบายใน README การทดสอบจำลองไม่ได้ยืนยันสิทธิ์ Supabase หรือโควตา Gemini จริง ต้องตรวจบริการจริงตาม SETUP หลังเชื่อมต่อ
+
+`npm run test:layout` ตรวจคิวอาร์แบบพับ บันทึกสถานะ/ขนส่ง ยืนยันรับสินค้า และการจัดวางที่ 320/390/768/1280 พิกเซล ด้วยออเดอร์จำลองเท่านั้น ไม่เรียกบริการจริง การปรับเลย์เอาท์ชุดนี้ไม่ต้องรัน SQL เพิ่ม ให้อัปเดตไฟล์หน้าเว็บผ่านการ build/deploy ตามปกติ
 
 ## โค้ดอ่านง่ายกับไฟล์ที่ส่งจริง
 
