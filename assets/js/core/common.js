@@ -71,7 +71,7 @@
       <header class="site-header"><div class="container header-inner">
       <a class="brand" href="index.html" aria-label="Bakkabook หน้าแรก"><span class="brand-mark">b</span><span>bakkabook<span class="brand-dot">.</span><small>INDEPENDENT BOOKSHOP</small></span></a>
       <nav class="main-nav" aria-label="เมนูหลัก"><a href="index.html#collection" ${active === 'shop' ? 'class="active" aria-current="page"' : ''}>ร้านหนังสือ</a><a href="index.html?featured=1#collection">หนังสือแนะนำ</a><a href="order.html" ${active === 'orders' ? 'class="active" aria-current="page"' : ''}>ติดตามคำสั่งซื้อ</a></nav>
-      <div class="header-actions"><a class="icon-button shelf-link" href="cart.html" aria-label="ตะกร้าสินค้า">${icon('bag')}<span id="cart-count">0</span></a><a class="icon-button shelf-link" href="index.html?shelf=1#collection" aria-label="ชั้นหนังสือของฉัน">${icon('bookmark')}<span id="favorite-count">0</span></a><a class="admin-link" href="admin.html">${icon('grid')}<span>หลังร้าน</span></a></div>
+      <div class="header-actions"><a class="icon-button shelf-link" href="cart.html" aria-label="ตะกร้าสินค้า">${icon('bag')}<span id="cart-count">0</span></a><a class="icon-button shelf-link" href="index.html?shelf=1#collection" aria-label="ชั้นหนังสือของฉัน">${icon('bookmark')}<span id="favorite-count">0</span></a></div>
       </div></header>`;
   }
   function footer() {
@@ -79,7 +79,7 @@
       BakkaStore.mode === 'demo'
         ? 'ร้านตัวอย่าง · หนังสือและราคาเป็นข้อมูลสมมติ'
         : 'คัดสรรเรื่องราวดี ๆ เพื่อคุณ';
-    return `<footer class="site-footer"><div class="container footer-top"><a class="brand" href="index.html"><span class="brand-mark">b</span><span>bakkabook.<small>A HOME FOR GOOD STORIES</small></span></a><p>ร้านเล็ก ๆ สำหรับคนที่เชื่อว่า<br>หนังสือดี ๆ เปลี่ยนวันธรรมดาให้พิเศษได้</p></div><div class="container footer-bottom"><span>© 2026 Bakkabook · Made for the love of reading.</span><span>${note}</span></div></footer>`;
+    return `<footer class="site-footer"><div class="container footer-top"><a class="brand" href="index.html"><span class="brand-mark">b</span><span>bakkabook.<small>A HOME FOR GOOD STORIES</small></span></a><p>ร้านเล็ก ๆ สำหรับคนที่เชื่อว่า<br>หนังสือดี ๆ เปลี่ยนวันธรรมดาให้พิเศษได้</p><p>ปกติจัดส่งภายใน 2–3 วัน หากหนังสือมีปัญหา ติดต่อ LINE ID: arnut369</p></div><div class="container footer-bottom"><span>© 2026 Bakkabook · Made for the love of reading.</span><span>${note}</span><a href="admin.html">หลังร้าน</a></div></footer>`;
   }
   function updateFavorites() {
     const count = document.getElementById('favorite-count');
@@ -98,8 +98,8 @@
       ${book.stock <= 0 ? '<span class="sold-out-overlay">SOLD OUT</span>' : ''}
       ${book.featured ? '<span class="book-label">BAKKA PICKS</span>' : ''}
       <button ${book.stock > 0 ? '' : 'disabled title="สินค้าหมด"'} class="save-book icon-button ${saved ? 'saved' : ''}" data-save="${escape(book.id)}" aria-label="${saved ? 'นำออกจาก' : 'เก็บเข้า'}ชั้นหนังสือ: ${escape(book.title)}" aria-pressed="${saved}">${icon('bookmark')}</button>
-      <a href="product.html?id=${encodeURIComponent(book.id)}" tabindex="-1" aria-hidden="true"><img src="${escape(imageUrl(book.images?.[0]))}" alt="" loading="lazy" width="320" height="460"></a>
-      </div><div class="book-card-info"><span class="eyebrow book-category">${escape(book.category)}</span><h3><a href="product.html?id=${encodeURIComponent(book.id)}">${escape(book.title)}</a></h3><p>${escape(book.author)}</p><div class="book-card-bottom"><strong>${money(book.price)}</strong><span class="availability ${book.stock === 0 ? 'sold-out' : ''}">${book.stock ? 'พร้อมส่ง · รวมส่งแล้ว' : 'สินค้าหมด'}</span>${book.stock > 0 ? `<button class="card-add-cart icon-button" data-cart="${escape(book.id)}" aria-label="เพิ่ม ${escape(book.title)} ลงตะกร้า">${icon('bag')}</button>` : ''}<a class="card-arrow" href="product.html?id=${encodeURIComponent(book.id)}" aria-label="ดู ${escape(book.title)}">${icon('arrow')}</a></div></div></article>`;
+      <a href="product.html?id=${encodeURIComponent(book.id)}" aria-label="ดูรายละเอียด ${escape(book.title)}"><img src="${escape(imageUrl(book.images?.[0]))}" alt="" loading="lazy" width="320" height="460"></a>
+      </div><div class="book-card-info"><span class="eyebrow book-category">${escape(book.category)}</span><h3><a href="product.html?id=${encodeURIComponent(book.id)}">${escape(book.title)}</a></h3><p>${escape(book.author)}</p><div class="book-card-bottom"><strong>${money(book.price)}</strong><span class="availability ${book.stock === 0 ? 'sold-out' : ''}">${book.stock ? 'พร้อมส่ง · รวมส่งแล้ว' : 'สินค้าหมด'}</span>${book.stock > 0 ? `<button class="card-add-cart icon-button" data-cart="${escape(book.id)}" data-stock="${Number(book.stock)}" aria-label="เพิ่ม ${escape(book.title)} ลงตะกร้า">${icon('bag')}<span>เพิ่มลงตะกร้า</span></button>` : ''}<a class="card-arrow" href="product.html?id=${encodeURIComponent(book.id)}" aria-label="ดู ${escape(book.title)}">${icon('arrow')}<span>ดูรายละเอียด</span></a></div></div></article>`;
   }
   function empty(title, description, action = '') {
     return `<div class="empty-state">${icon('book')}<h3>${escape(title)}</h3><p>${escape(description)}</p>${action}</div>`;
@@ -122,7 +122,7 @@
       const cartButton = event.target.closest('[data-cart]');
       if (cartButton) {
         try {
-          BakkaStore.addToCart(cartButton.dataset.cart);
+          BakkaStore.addToCart(cartButton.dataset.cart, 1, cartButton.dataset.stock);
           toast('เพิ่มหนังสือลงตะกร้าแล้ว');
         } catch (error) {
           toast(error.message, true);

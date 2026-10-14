@@ -134,6 +134,9 @@ for (const asset of assets) {
   if (asset.source.endsWith('.js')) await fs.unlink(outputPath(asset.source));
 }
 for (const page of html) await fs.writeFile(outputPath(page.file), page.code);
+for (const file of ['robots.txt', 'sitemap.xml']) {
+  await fs.copyFile(path.join(root, file), outputPath(file));
+}
 const publicConfig = {
   supabaseUrl: config.supabaseUrl,
   supabaseAnonKey: config.supabaseAnonKey,

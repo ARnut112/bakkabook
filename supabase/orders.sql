@@ -470,8 +470,8 @@ begin
 end;
 $$;
 
-revoke all on function public.get_customer_orders_by_phone(text) from public;
-grant execute on function public.get_customer_orders_by_phone(text) to anon, authenticated;
+revoke all on function public.get_customer_orders_by_phone(text) from public, anon, authenticated;
+-- Phone-only lookup is retired. Apply tracking-security.sql after this file.
 
 -- Public stock context: counts only reservations for a published book.
 create or replace function public.get_book_reservation_status(p_book_id uuid)

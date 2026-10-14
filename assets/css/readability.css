@@ -1,0 +1,57 @@
+/* Keep compact cards readable and give icon actions visible labels. */
+.order-main .order-lookup-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+.shop-service-note {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #545c53;
+}
+@media (max-width: 600px) {
+  .order-main .order-lookup-form {
+    grid-template-columns: 1fr;
+  }
+}
+.book-card .book-category {
+  font-size: 12px;
+  color: #985035;
+  letter-spacing: 0.04em;
+}
+.book-card-info > p {
+  font-size: 14px;
+  color: #545c53;
+}
+.book-card-bottom .availability {
+  flex: 1 0 100%;
+  font-size: 14px;
+  color: #4d6446;
+}
+.book-card-bottom .availability.sold-out {
+  color: #985035;
+}
+.book-card .card-add-cart,
+.book-card .card-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  min-height: 44px;
+  flex: 1 1 100%;
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.book-card .card-add-cart .icon,
+.book-card .card-arrow .icon {
+  flex-shrink: 0;
+}
+.book-card .save-book {
+  width: 44px;
+  height: 44px;
+}

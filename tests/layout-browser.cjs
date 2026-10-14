@@ -24,8 +24,7 @@ const mock = `
   BakkaStore.getPaymentSettings = async () => ({ qr_image_url: 'assets/covers/bloom.svg' });
   BakkaStore.signedPaymentSlip = async () => 'assets/covers/joy.svg';
   BakkaStore.lastOrder = () => ({ order_number: 'BK-LAYOUT-PAY', phone: '0812345678', order_id: 'layout-payment' });
-  BakkaStore.getCustomerOrder = async () => ({ ...layoutOrders[0], order_number: 'BK-LAYOUT-PAY', status: 'awaiting_payment' });
-  BakkaStore.getCustomerOrdersByPhone = async () => layoutOrders;
+  BakkaStore.getCustomerOrder = async () => location.pathname.endsWith('/order.html') ? layoutOrders[1] : ({ ...layoutOrders[0], order_number: 'BK-LAYOUT-PAY', status: 'awaiting_payment' });
   BakkaStore.saveOrderShipping = async (id, carrier, tracking) => {
     layoutCalls.push({ action: 'ship', id, carrier, tracking });
     Object.assign(layoutOrders.find(order => order.id === id), { status: 'shipped', carrier, tracking_number: tracking });

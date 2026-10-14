@@ -93,6 +93,19 @@ test('cart persists item quantities and removes items when quantity is cleared',
   store.clearCart();
   assert.equal(store.cart().length, 0);
 });
+test('adding a displayed book cannot exceed stock or change the cart on rejection', () => {
+  const { store } = app();
+  store.addToCart('single-copy', 1, 1);
+  assert.throws(() => store.addToCart('single-copy', 1, 1), /มีสินค้า 1 เล่ม/);
+  assert.equal(store.cart()[0].quantity, 1);
+  assert.throws(() => store.addToCart('sold-out', 1, 0), /สินค้าหมด/);
+  assert.equal(store.cart().length, 1);
+  store.addToCart('two-copies', 1, 2);
+  store.addToCart('two-copies', 1, 2);
+  assert.throws(() => store.addToCart('two-copies', 1, 2), /มีสินค้า 2 เล่ม/);
+  assert.equal(store.cart().find((item) => item.id === 'two-copies').quantity, 2);
+});
+
 test('checkout creates a QR order and stores its resume details', async () => {
   let call;
   const { store } = app(
@@ -174,20 +187,6 @@ test('customer can resume an order with its number and phone without exposing ta
     p_order_number: 'BK-123',
     p_phone: '0812345678',
   });
-});
-test('customer can find all recent orders by phone and only sees the phone lookup RPC', async () => {
-  let call;
-  const { store } = app(
-    { supabaseUrl: 'https://example.supabase.co', supabaseAnonKey: 'sb_publishable_test' },
-    async (url, options) => {
-      call = { url, options };
-      return response([{ order_number: 'BK-123', status: 'awaiting_payment' }]);
-    },
-  );
-  const orders = await store.getCustomerOrdersByPhone('0812345678');
-  assert.equal(orders[0].status, 'awaiting_payment');
-  assert.match(call.url, /rpc\/get_customer_orders_by_phone$/);
-  assert.deepEqual(JSON.parse(call.options.body), { p_phone: '0812345678' });
 });
 test('product availability reveals only reservation counts, not buyer details', async () => {
   let call;

@@ -4,8 +4,12 @@
   const params = new URLSearchParams(location.search);
   const state = {
     query: params.get('q') || '',
-    category: 'ทั้งหมด',
-    sort: 'newest',
+    category: BAKKA_CATEGORIES.includes(params.get('category'))
+      ? params.get('category')
+      : 'ทั้งหมด',
+    sort: ['newest', 'price-low', 'price-high', 'title'].includes(params.get('sort'))
+      ? params.get('sort')
+      : 'newest',
     favorites: params.get('shelf') === '1',
     featured: params.get('featured') === '1',
     limit: 8,
@@ -15,6 +19,7 @@
   const message = document.getElementById('catalog-message');
   const search = document.getElementById('search');
   search.value = state.query;
+  document.getElementById('sort').value = state.sort;
   document.getElementById('categories').innerHTML = ['ทั้งหมด', ...BAKKA_CATEGORIES]
     .map(
       (category) =>
@@ -23,6 +28,17 @@
     .join('');
   // All visible catalog results come from this one combined filter state.
   function render() {
+    // Keep filters shareable and restore them on reload without adding a history entry per keypress.
+    const url = new URL(location.href);
+    for (const [key, value] of Object.entries({
+      q: state.query,
+      category: state.category === 'ทั้งหมด' ? '' : state.category,
+      sort: state.sort === 'newest' ? '' : state.sort,
+      shelf: state.favorites ? '1' : '',
+      featured: state.featured ? '1' : '',
+    }))
+      value ? url.searchParams.set(key, value) : url.searchParams.delete(key);
+    history.replaceState(null, '', url);
     const results = BakkaStore.filter(
       state.featured ? books.filter((book) => book.featured) : books,
       state,
@@ -107,6 +123,14 @@
   });
   try {
     books = await BakkaStore.list();
+    document.querySelectorAll('[data-category]').forEach((button) => {
+      const category = button.dataset.category;
+      const count =
+        category === 'ทั้งหมด'
+          ? books.length
+          : books.filter((book) => book.category === category).length;
+      button.textContent = `${category} (${count})`;
+    });
     render();
   } catch (error) {
     grid.setAttribute('aria-busy', 'false');

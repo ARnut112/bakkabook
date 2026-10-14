@@ -8,6 +8,11 @@
   const orderNumber = params.get('order') || saved?.order_number;
   if (received) {
     $('payment-thanks').hidden = false;
+    if (saved?.order_number) {
+      $('payment-order-reference').textContent =
+        `เลขคำสั่งซื้อ ${saved.order_number} · โปรดเก็บเลขนี้ไว้ติดตามร่วมกับเบอร์โทรศัพท์ที่ใช้สั่งซื้อ`;
+      $('payment-order-reference').hidden = false;
+    }
     return;
   }
   if (!orderNumber || !saved?.phone) {
@@ -66,7 +71,7 @@
     else
       instructions = `<section class="order-payment"><h2>ชำระเงินด้วย QR</h2><p>ราคานี้รวมค่าจัดส่งแล้ว โอนตามยอดที่แสดงและแนบสลิป ร้านจะตรวจสอบด้วยตนเอง</p><div class="qr-payment-card"><img src="${BakkaUI.escape(qrUrl)}" alt="QR Code สำหรับชำระเงิน"><div><small>ยอดชำระทั้งหมด (รวมจัดส่ง)</small><strong>${BakkaUI.money(order.amount_due)}</strong></div></div><form class="slip-form" id="slip-form"><label for="payment-slip">แนบสลิป (JPG, PNG หรือ WEBP ไม่เกิน 5 MB)</label><input id="payment-slip" type="file" accept="image/jpeg,image/png,image/webp" required><button type="submit" class="button primary" id="send-slip">ส่งสลิปให้ร้าน</button><small>การแนบสลิปยังไม่ถือว่ายืนยันการชำระ ร้านจะตรวจรายการเอง</small></form></section>`;
     $('payment-content').innerHTML =
-      `<article class="payment-order-card"><div class="order-status-banner"><span class="order-status-dot"></span><div><strong>${BakkaUI.escape(statusLabels[order.status] || 'กำลังดำเนินการ')}</strong><small>${BakkaUI.escape(order.order_number)}</small></div></div><div class="order-summary"><div class="order-summary-head"><strong>รายการหนังสือ</strong><span>${BakkaUI.money(order.amount_due)} รวมส่งแล้ว</span></div><ul>${items}</ul><div class="order-summary-totals"><span>ยอดชำระทั้งหมด (รวมจัดส่ง)</span><strong>${BakkaUI.money(order.amount_due)}</strong></div></div>${instructions}<a class="text-link transaction-track-link" href="order.html">ดูสถานะทั้งหมดในหน้าติดตามคำสั่งซื้อ <span data-icon="arrow"></span></a></article>`;
+      `<article class="payment-order-card"><div class="order-status-banner"><span class="order-status-dot"></span><div><strong>${BakkaUI.escape(statusLabels[order.status] || 'กำลังดำเนินการ')}</strong><small>${BakkaUI.escape(order.order_number)}</small></div></div><div class="order-summary"><div class="order-summary-head"><strong>รายการหนังสือ</strong><span>${BakkaUI.money(order.amount_due)} รวมส่งแล้ว</span></div><ul>${items}</ul><div class="order-summary-totals"><span>ยอดชำระทั้งหมด (รวมจัดส่ง)</span><strong>${BakkaUI.money(order.amount_due)}</strong></div></div>${instructions}<p class="shop-service-note">โปรดเก็บเลขคำสั่งซื้อนี้ไว้ ใช้คู่กับเบอร์โทรศัพท์เพื่อติดตามสินค้า</p><a class="text-link transaction-track-link" href="order.html">ติดตามคำสั่งซื้อนี้ <span data-icon="arrow"></span></a></article>`;
     $('payment-content')
       .querySelectorAll('[data-icon]')
       .forEach((el) => (el.innerHTML = BakkaUI.icon(el.dataset.icon)));

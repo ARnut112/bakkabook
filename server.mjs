@@ -16,6 +16,8 @@ const types = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.webp': 'image/webp',
+  '.txt': 'text/plain; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
 };
 const server = http.createServer(async (req, res) => {
   try {
@@ -27,7 +29,7 @@ const server = http.createServer(async (req, res) => {
     const relative = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
     const file = path.resolve(root, relative);
     const allowed =
-      /^(index\.html|product\.html|cart\.html|payment\.html|order\.html|admin\.html|config\.js|assets\/[a-zA-Z0-9_./-]+)$/.test(
+      /^(robots\.txt|sitemap\.xml|index\.html|product\.html|cart\.html|payment\.html|order\.html|admin\.html|config\.js|assets\/[a-zA-Z0-9_./-]+)$/.test(
         relative,
       );
     if (

@@ -17,6 +17,12 @@ test('shipping permissions, customer receipt and tracking data', async () => {
     const sql = fs.readFileSync(path.join(__dirname, '../supabase/shipping.sql'), 'utf8');
     await db.exec(sql);
     await db.exec(sql);
+    const trackingSql = fs.readFileSync(
+      path.join(__dirname, '../supabase/tracking-security.sql'),
+      'utf8',
+    );
+    await db.exec(trackingSql);
+    await db.exec(trackingSql);
     const id = randomUUID();
     await db.query(
       "insert into orders(id,order_number,phone,status) values($1,'BK-TEST','0812345678','pending')",
@@ -30,6 +36,10 @@ test('shipping permissions, customer receipt and tracking data', async () => {
     await assert.rejects(ship(), /permission denied/);
     await assert.rejects(receive(), /จัดส่ง/);
     await db.exec('reset role; set role authenticated');
+    await assert.rejects(
+      db.query("select get_customer_orders_by_phone('0812345678')"),
+      /permission denied/,
+    );
     await assert.rejects(ship(), /เจ้าของร้าน/);
     await db.exec("reset role; set test.admin='true'");
     await assert.rejects(ship(), /ยืนยันการชำระ/);
@@ -38,8 +48,16 @@ test('shipping permissions, customer receipt and tracking data', async () => {
     await ship();
     await db.exec('set role anon');
     await assert.rejects(receive('0899999999'), /ไม่พบคำสั่งซื้อ/);
-    const rows = (await db.query("select get_customer_orders_by_phone('0812345678') as orders"))
-      .rows[0].orders;
+    await assert.rejects(
+      db.query("select get_customer_orders_by_phone('0812345678')"),
+      /permission denied/,
+    );
+    await assert.rejects(db.query("select get_customer_order('WRONG', '0812345678')"), /ไม่พบ/);
+    await assert.rejects(db.query("select get_customer_order('BK-TEST', '0899999999')"), /ไม่พบ/);
+    const rows = [
+      (await db.query("select get_customer_order('BK-TEST','0812345678') as orders")).rows[0]
+        .orders,
+    ];
     assert.equal(rows[0].carrier, 'Flash');
     assert.equal(rows[0].tracking_number, 'TH123');
     await receive();

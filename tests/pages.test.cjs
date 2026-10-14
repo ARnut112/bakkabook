@@ -258,15 +258,17 @@ test('order resume uses the searched phone even when the customer edits the inpu
     BakkaUI: ui,
     BakkaStore: {
       lastOrder: () => null,
-      async getCustomerOrdersByPhone(phone) {
+      async getCustomerOrder(number, phone) {
         searchedPhone = phone;
-        return [{ ...order('BK-1'), order_id: 'order-id', amount_due: 200 }];
+        assert.equal(number, 'BK-1');
+        return { ...order('BK-1'), order_id: 'order-id', amount_due: 200 };
       },
       rememberOrder: (value) => {
         remembered = value;
       },
     },
   });
+  get('lookup-number').value = 'BK-1';
   get('lookup-phone').value = '0812345678';
   get('order-lookup-form').emit('submit', { preventDefault() {} });
   await settle();

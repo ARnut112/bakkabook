@@ -321,10 +321,22 @@
       return Array.isArray(ids) ? ids : [];
     },
     cart,
-    addToCart(id, quantity = 1) {
+    addToCart(id, quantity = 1, stock) {
       quantity = Math.min(99, Math.max(1, Math.floor(Number(quantity) || 1)));
       const items = cart();
       const item = items.find((row) => row.id === id);
+      // Check the displayed inventory before changing storage; checkout rechecks on the server.
+      if (
+        stock !== undefined &&
+        Number.isFinite(Number(stock)) &&
+        (item?.quantity || 0) + quantity > Number(stock)
+      ) {
+        throw new Error(
+          Number(stock) > 0
+            ? `มีสินค้า ${Number(stock)} เล่ม และอยู่ในตะกร้าของคุณแล้ว ${item?.quantity || 0} เล่ม`
+            : 'สินค้าหมดแล้ว กรุณาเลือกหนังสือเล่มอื่น',
+        );
+      }
       if (item) item.quantity = Math.min(99, item.quantity + quantity);
       else items.push({ id, quantity });
       saveCart(items);
@@ -381,14 +393,6 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ p_order_number: orderNumber, p_phone: phone }),
-      });
-    },
-    async getCustomerOrdersByPhone(phone) {
-      checkConfiguration();
-      return request('/rest/v1/rpc/get_customer_orders_by_phone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ p_phone: phone }),
       });
     },
     async confirmOrderReceived(orderId, orderNumber, phone) {

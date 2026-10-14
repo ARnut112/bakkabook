@@ -2,6 +2,7 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
+    <meta name="robots" content="noindex, nofollow" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#244b42" />
     <title>ติดตามคำสั่งซื้อ — Bakkabook</title>
@@ -26,9 +27,22 @@
         <div class="order-lookup-copy">
           <div class="eyebrow orange">ORDER STATUS</div>
           <h1>ติดตามคำสั่งซื้อ</h1>
-          <p>กรอกเบอร์โทรศัพท์ที่ใช้สั่งซื้อ เพื่อดูสถานะของรายการ</p>
+          <p>กรอกเลขคำสั่งซื้อและเบอร์โทรศัพท์ที่ใช้สั่งซื้อ เพื่อดูสถานะของรายการ</p>
         </div>
         <form id="order-lookup-form" class="order-lookup-form">
+          <div class="field">
+            <label for="lookup-number">เลขคำสั่งซื้อ</label>
+            <input
+              id="lookup-number"
+              type="text"
+              required
+              maxlength="40"
+              autocomplete="off"
+              spellcheck="false"
+              autocapitalize="characters"
+              placeholder="BK-…"
+            />
+          </div>
           <div class="field">
             <label for="lookup-phone">เบอร์โทรศัพท์</label
             ><input

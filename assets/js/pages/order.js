@@ -1,4 +1,4 @@
-// Order tracking: find recent orders by phone; payment stays on payment.html.
+// Order tracking: find one order by order number and phone; payment stays on payment.html.
 (async function () {
   const $ = (id) => document.getElementById(id);
   const statusLabels = {
@@ -12,11 +12,14 @@
     cancelled: 'คำสั่งซื้อถูกยกเลิก',
   };
   const phoneField = $('lookup-phone');
+  const numberField = $('lookup-number');
   const orderList = $('order-list');
   let busy = false;
   let resultsPhone = '';
+  let resultsNumber = '';
   const saved = BakkaStore.lastOrder();
   if (saved?.phone) phoneField.value = saved.phone;
+  if (saved?.order_number) numberField.value = saved.order_number;
 
   function showError(message = '') {
     $('lookup-error').textContent = message;
@@ -50,9 +53,12 @@
         : '';
     return `<article class="order-result"><div class="order-status-banner"><span class="order-status-dot"></span><div><strong>${BakkaUI.escape(statusLabels[order.status] || 'กำลังดำเนินการ')}</strong><small>${BakkaUI.escape(order.order_number)} · ${new Date(order.created_at).toLocaleDateString('th-TH')}</small></div></div><div class="order-summary"><div class="order-summary-head"><strong>รายการหนังสือ</strong><span>${BakkaUI.money(order.amount_due)} รวมส่งแล้ว</span></div><ul>${items}</ul><div class="order-summary-totals"><span>ยอดชำระทั้งหมด (รวมจัดส่ง)</span><strong>${BakkaUI.money(order.amount_due)}</strong></div></div>${shipping}${action || received ? `<div class="order-card-actions">${action}${received}</div>` : ''}</article>`;
   }
-  async function loadOrders(phoneOverride) {
+  async function loadOrders(phoneOverride, numberOverride) {
     if (busy) return;
     const phone = typeof phoneOverride === 'string' ? phoneOverride : phoneField.value.trim();
+    const number =
+      typeof numberOverride === 'string' ? numberOverride : numberField.value.trim().toUpperCase();
+    if (!number) return showError('กรุณากรอกเลขคำสั่งซื้อ');
     if (!phone) return showError('กรุณากรอกเบอร์โทรศัพท์ที่ใช้สั่งซื้อ');
     busy = true;
     showError();
@@ -60,7 +66,7 @@
     $('lookup-submit').textContent = 'กำลังค้นหา...';
     $('refresh-orders').disabled = true;
     try {
-      const orders = await BakkaStore.getCustomerOrdersByPhone(phone);
+      const orders = [await BakkaStore.getCustomerOrder(number, phone)];
       $('order-results-count').textContent = `พบ ${orders.length} รายการ`;
       // Keep closed orders available without crowding ongoing purchases.
       const closed = orders.filter((order) => ['completed', 'cancelled'].includes(order.status));
@@ -78,6 +84,7 @@
           : '');
       // Resume with the phone used for these results, even if the input is edited.
       resultsPhone = phone;
+      resultsNumber = number;
       $('order-results').hidden = false;
     } catch (error) {
       $('order-results').hidden = true;
@@ -114,7 +121,8 @@
         );
         BakkaUI.toast('ขอบคุณค่ะ ยืนยันรับสินค้าเรียบร้อยแล้ว');
         phoneField.value = phone;
-        await loadOrders(phone);
+        numberField.value = resultsNumber;
+        await loadOrders(phone, resultsNumber);
       } catch (error) {
         showError(error.message);
         receipt.disabled = false;
@@ -131,5 +139,5 @@
       payment_method: link.dataset.paymentMethod,
     });
   });
-  if (saved?.phone) loadOrders();
+  if (saved?.phone && saved?.order_number) loadOrders();
 })();

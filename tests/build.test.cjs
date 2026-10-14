@@ -17,6 +17,8 @@ function fixture(t) {
     'payment.html',
     'order.html',
     'admin.html',
+    'robots.txt',
+    'sitemap.xml',
   ]) {
     const target = path.join(temp, file);
     fs.mkdirSync(path.dirname(target), { recursive: true });
@@ -68,6 +70,8 @@ test('Vercel build injects public environment variables and packages only fronte
     'order.html',
     'payment.html',
     'product.html',
+    'robots.txt',
+    'sitemap.xml',
   ]);
 });
 test('Vercel build refuses missing credentials and secret keys without publishing them', (t) => {
